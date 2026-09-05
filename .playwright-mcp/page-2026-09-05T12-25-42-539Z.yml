@@ -1,0 +1,14 @@
+- generic [ref=f1e17]:
+  - navigation [ref=f1e18]:
+    - heading "🎓 SubmitBridge" [level=2] [ref=f1e19]
+    - generic [ref=f1e20]:
+      - generic [ref=f1e21]: Welcome, Prof. Alan Turing
+      - button "Logout" [ref=f1e22] [cursor=pointer]
+  - generic [ref=f1e23]:
+    - generic [ref=f1e24]:
+      - heading "My Assignments" [level=2] [ref=f1e25]
+      - link "+ Create New Assignment" [ref=f1e26] [cursor=pointer]:
+        - /url: /create
+    - generic [ref=f1e27]:
+      - paragraph [ref=f1e28]: No assignments yet.
+      - paragraph [ref=f1e29]: Click "Create New Assignment" to get started!

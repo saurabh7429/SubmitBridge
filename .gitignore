@@ -1,0 +1,19 @@
+# Node modules — these are auto-installed via npm install, never commit them
+node_modules/
+
+# Environment files — contain secrets, never commit
+.env
+
+# Vite build output
+dist/
+
+# macOS system files
+.DS_Store
+
+# Uploaded student PDFs (don't commit to version control)
+server/uploads/*.pdf
+
+# Local database data and logs
+server/data/
+*.log
+
