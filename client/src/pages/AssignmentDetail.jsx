@@ -170,8 +170,19 @@ function AssignmentDetail() {
                 </div>
               )}
               <div>
-                <span style={styles.metaLabel}>Late Submissions:</span>{' '}
-                {assignment.allow_late_submission ? 'Allowed' : 'Blocked'}
+                <span style={styles.metaLabel}>Submission Status:</span>{' '}
+                <strong
+                  style={{
+                    color:
+                      assignment.due_date && new Date() > new Date(assignment.due_date)
+                        ? '#dc2626'
+                        : '#16a34a',
+                  }}
+                >
+                  {assignment.due_date && new Date() > new Date(assignment.due_date)
+                    ? '⛔ Closed'
+                    : '🟢 Open'}
+                </strong>
               </div>
             </div>
 

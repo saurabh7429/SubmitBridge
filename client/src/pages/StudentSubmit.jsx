@@ -26,7 +26,10 @@ function StudentSubmit() {
         const res = await getAssignmentForStudent(assignmentId);
         setAssignment(res.data);
       } catch (err) {
-        setError('Assignment not found or link is invalid.');
+        setError(
+          err.response?.data?.message ||
+            'Assignment not found, moved to trash, or link is invalid.'
+        );
       } finally {
         setLoading(false);
       }
@@ -161,11 +164,9 @@ function StudentSubmit() {
     );
   }
 
-  // Check if submission is closed
+  // Check if submission is closed (if deadline date/time is set and has passed)
   const isLateClosed =
-    assignment.due_date &&
-    !assignment.allow_late_submission &&
-    new Date() > new Date(assignment.due_date);
+    assignment.due_date && new Date() > new Date(assignment.due_date);
 
   return (
     <div style={styles.page}>

@@ -111,14 +111,14 @@ router.post("/:assignmentId", upload.single("file"), async (req, res) => {
       });
     }
 
-    // Check if late submissions are blocked after due date
-    if (assignment.due_date && !assignment.allow_late_submission) {
+    // Check if assignment due date has passed (Automatic deadline close)
+    if (assignment.due_date) {
       const now = new Date();
       const due = new Date(assignment.due_date);
       if (now > due) {
         return res.status(400).json({
           message:
-            "The due date for this assignment has passed. Late submissions are closed.",
+            "The due date & time for this assignment has passed. Submissions are now closed.",
         });
       }
     }

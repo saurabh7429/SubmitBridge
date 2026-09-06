@@ -16,7 +16,6 @@ function CreateAssignment() {
   const [questions, setQuestions] = useState('');
   const [maxMarks, setMaxMarks] = useState(100);
   const [dueDate, setDueDate] = useState('');
-  const [allowLateSubmission, setAllowLateSubmission] = useState(true);
   const [allowPdf, setAllowPdf] = useState(true);
   const [allowDocx, setAllowDocx] = useState(false);
 
@@ -47,11 +46,6 @@ function CreateAssignment() {
       return;
     }
 
-    if (!allowLateSubmission && !dueDate) {
-      setError('Please set a Due Date & Time if submissions after due date are not allowed.');
-      return;
-    }
-
     setLoading(true);
 
     try {
@@ -65,7 +59,7 @@ function CreateAssignment() {
         questions,
         maxMarks: Number(maxMarks),
         dueDate: dueDate ? new Date(dueDate).toISOString() : null,
-        allowLateSubmission,
+        allowLateSubmission: false, // Strict: once due date passes, submissions close
         allowedFileTypes: types.join(','),
       };
 
@@ -307,53 +301,33 @@ function CreateAssignment() {
                     type="datetime-local"
                     value={dueDate}
                     onChange={(e) => setDueDate(e.target.value)}
-                    required={!allowLateSubmission}
-                    style={{
-                      ...styles.input,
-                      borderColor: !allowLateSubmission && !dueDate ? '#f87171' : '#cbd5e1',
-                    }}
+                    style={styles.input}
                   />
-                  {!allowLateSubmission && (
-                    <span style={{ fontSize: '11px', color: '#dc2626', marginTop: '4px', display: 'block' }}>
-                      ⚠️ Submissions will automatically close once this date & time passes.
-                    </span>
-                  )}
+                  <span style={{ fontSize: '11px', color: '#64748b', marginTop: '4px', display: 'block' }}>
+                    💡 Agar deadline set ki gayi hai, to date & time cross hote hi submissions automatically band ho jayenge.
+                  </span>
                 </div>
               </div>
 
-              {/* Row 7: Allowed File Types & Late Submission Toggle */}
-              <div style={styles.row}>
-                <div style={styles.col}>
-                  <label style={styles.label}>Allowed File Formats</label>
-                  <div style={styles.checkboxGroup}>
-                    <label style={styles.checkboxLabel}>
-                      <input
-                        type="checkbox"
-                        checked={allowPdf}
-                        onChange={(e) => setAllowPdf(e.target.checked)}
-                      />
-                      <span>PDF Document (.pdf)</span>
-                    </label>
-                    <label style={styles.checkboxLabel}>
-                      <input
-                        type="checkbox"
-                        checked={allowDocx}
-                        onChange={(e) => setAllowDocx(e.target.checked)}
-                      />
-                      <span>Word Document (.docx)</span>
-                    </label>
-                  </div>
-                </div>
-
-                <div style={styles.col}>
-                  <label style={styles.label}>Late Submissions</label>
+              {/* Row 7: Allowed File Types */}
+              <div style={styles.field}>
+                <label style={styles.label}>Allowed File Formats</label>
+                <div style={styles.checkboxGroup}>
                   <label style={styles.checkboxLabel}>
                     <input
                       type="checkbox"
-                      checked={allowLateSubmission}
-                      onChange={(e) => setAllowLateSubmission(e.target.checked)}
+                      checked={allowPdf}
+                      onChange={(e) => setAllowPdf(e.target.checked)}
                     />
-                    <span>Allow submissions after the due date</span>
+                    <span>PDF Document (.pdf)</span>
+                  </label>
+                  <label style={styles.checkboxLabel}>
+                    <input
+                      type="checkbox"
+                      checked={allowDocx}
+                      onChange={(e) => setAllowDocx(e.target.checked)}
+                    />
+                    <span>Word Document (.docx)</span>
                   </label>
                 </div>
               </div>
