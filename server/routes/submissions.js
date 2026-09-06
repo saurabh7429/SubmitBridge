@@ -45,7 +45,7 @@ router.get("/assignment/:assignmentId", async (req, res) => {
     const { data: assignment, error } = await supabase
       .from("assignments")
       .select(
-        "id, college_name, department, teacher_name, subject, subject_code, title, instructions, questions, max_marks, due_date, allow_late_submission, allowed_file_types",
+        "id, college_name, department, teacher_name, subject, subject_code, title, instructions, questions, max_marks, due_date, allow_late_submission, allowed_file_types, is_deleted",
       )
       .eq("id", assignmentId)
       .maybeSingle();
@@ -54,6 +54,12 @@ router.get("/assignment/:assignmentId", async (req, res) => {
       return res
         .status(404)
         .json({ message: "Assignment not found or link is invalid." });
+    }
+
+    if (assignment.is_deleted) {
+      return res
+        .status(410)
+        .json({ message: "This assignment has been temporarily disabled or moved to trash by the faculty." });
     }
 
     res.json(assignment);
@@ -87,7 +93,7 @@ router.post("/:assignmentId", upload.single("file"), async (req, res) => {
     const cleanRoll = rollNumber.trim().toUpperCase();
     const cleanName = studentName.trim();
 
-    // 1. Verify that assignment exists and check due date
+    // 1. Verify that assignment exists and check due date & deleted status
     const { data: assignment, error: asgnError } = await supabase
       .from("assignments")
       .select("*")
@@ -96,6 +102,13 @@ router.post("/:assignmentId", upload.single("file"), async (req, res) => {
 
     if (asgnError || !assignment) {
       return res.status(404).json({ message: "Assignment does not exist." });
+    }
+
+    // Check if assignment is deleted / in trash
+    if (assignment.is_deleted) {
+      return res.status(410).json({
+        message: "This assignment has been deleted by the faculty. Submissions are closed.",
+      });
     }
 
     // Check if late submissions are blocked after due date

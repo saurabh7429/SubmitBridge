@@ -110,6 +110,15 @@ router.get("/", async (req, res) => {
   try {
     const teacherId = req.teacher.id;
 
+    // Auto-cleanup: permanently remove soft-deleted assignments older than 3 days
+    const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+    await supabase
+      .from("assignments")
+      .delete()
+      .eq("teacher_id", teacherId)
+      .eq("is_deleted", true)
+      .lt("deleted_at", threeDaysAgo);
+
     // Fetch assignments owned by this teacher
     const { data: assignments, error } = await supabase
       .from("assignments")
@@ -201,6 +210,118 @@ router.get("/:id", async (req, res) => {
     });
   } catch (err) {
     console.error("Fetch assignment detail error:", err);
+    res.status(500).json({ message: "Server error.", error: err.message });
+  }
+});
+
+// ─── DELETE /api/assignments/:id ──────────────────────────────────────────────
+// Soft delete an assignment: retains data for 3 days recovery, blocks submissions immediately
+router.delete("/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const teacherId = req.teacher.id;
+
+    // Verify ownership
+    const { data: assignment, error: findError } = await supabase
+      .from("assignments")
+      .select("id, is_deleted")
+      .eq("id", id)
+      .eq("teacher_id", teacherId)
+      .maybeSingle();
+
+    if (findError || !assignment) {
+      return res
+        .status(404)
+        .json({ message: "Assignment not found or unauthorized." });
+    }
+
+    // Mark as deleted with timestamp
+    const now = new Date().toISOString();
+    const { error: updateError } = await supabase
+      .from("assignments")
+      .update({
+        is_deleted: true,
+        deleted_at: now,
+      })
+      .eq("id", id);
+
+    if (updateError) {
+      return res
+        .status(500)
+        .json({ message: "Failed to delete assignment.", error: updateError.message });
+    }
+
+    res.json({
+      message: "Assignment moved to trash. You can recover it within 3 days.",
+      deletedAt: now,
+    });
+  } catch (err) {
+    console.error("Delete assignment error:", err);
+    res.status(500).json({ message: "Server error.", error: err.message });
+  }
+});
+
+// ─── PATCH /api/assignments/:id/restore ───────────────────────────────────────
+// Restore a soft-deleted assignment within the 3-day recovery window
+router.patch("/:id/restore", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const teacherId = req.teacher.id;
+
+    // Verify ownership and check 3-day window
+    const { data: assignment, error: findError } = await supabase
+      .from("assignments")
+      .select("id, is_deleted, deleted_at")
+      .eq("id", id)
+      .eq("teacher_id", teacherId)
+      .maybeSingle();
+
+    if (findError || !assignment) {
+      return res
+        .status(404)
+        .json({ message: "Assignment not found or unauthorized." });
+    }
+
+    if (!assignment.is_deleted) {
+      return res
+        .status(400)
+        .json({ message: "Assignment is not in trash." });
+    }
+
+    // Check if 3 days (72 hours) have passed
+    if (assignment.deleted_at) {
+      const deletedTime = new Date(assignment.deleted_at).getTime();
+      const nowTime = Date.now();
+      const diffDays = (nowTime - deletedTime) / (1000 * 60 * 60 * 24);
+
+      if (diffDays > 3) {
+        return res.status(400).json({
+          message:
+            "3-day recovery window has expired. This assignment cannot be restored.",
+        });
+      }
+    }
+
+    // Restore assignment
+    const { error: restoreError } = await supabase
+      .from("assignments")
+      .update({
+        is_deleted: false,
+        deleted_at: null,
+      })
+      .eq("id", id);
+
+    if (restoreError) {
+      return res
+        .status(500)
+        .json({ message: "Failed to restore assignment.", error: restoreError.message });
+    }
+
+    res.json({
+      message: "Assignment restored successfully! Submissions are active again.",
+    });
+  } catch (err) {
+    console.error("Restore assignment error:", err);
     res.status(500).json({ message: "Server error.", error: err.message });
   }
 });

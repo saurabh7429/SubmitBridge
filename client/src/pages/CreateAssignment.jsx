@@ -47,6 +47,11 @@ function CreateAssignment() {
       return;
     }
 
+    if (!allowLateSubmission && !dueDate) {
+      setError('Please set a Due Date & Time if submissions after due date are not allowed.');
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -295,13 +300,24 @@ function CreateAssignment() {
                   />
                 </div>
                 <div style={styles.col}>
-                  <label style={styles.label}>Due Date & Time (Optional)</label>
+                  <label style={styles.label}>
+                    Due Date & Time {!allowLateSubmission ? '*' : '(Optional)'}
+                  </label>
                   <input
                     type="datetime-local"
                     value={dueDate}
                     onChange={(e) => setDueDate(e.target.value)}
-                    style={styles.input}
+                    required={!allowLateSubmission}
+                    style={{
+                      ...styles.input,
+                      borderColor: !allowLateSubmission && !dueDate ? '#f87171' : '#cbd5e1',
+                    }}
                   />
+                  {!allowLateSubmission && (
+                    <span style={{ fontSize: '11px', color: '#dc2626', marginTop: '4px', display: 'block' }}>
+                      ⚠️ Submissions will automatically close once this date & time passes.
+                    </span>
+                  )}
                 </div>
               </div>
 

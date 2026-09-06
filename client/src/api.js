@@ -38,6 +38,12 @@ export const getAssignment = (id) =>
 export const createAssignment = (assignmentData) =>
   axios.post(`${API_BASE}/assignments`, assignmentData, authHeader());
 
+export const deleteAssignment = (id) =>
+  axios.delete(`${API_BASE}/assignments/${id}`, authHeader());
+
+export const restoreAssignment = (id) =>
+  axios.patch(`${API_BASE}/assignments/${id}/restore`, {}, authHeader());
+
 // ─── SUBMISSIONS APIS ─────────────────────────────────────────────────────────
 export const getAssignmentForStudent = (assignmentId) =>
   axios.get(`${API_BASE}/submissions/assignment/${assignmentId}`);
