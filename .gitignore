@@ -1,24 +1,53 @@
-# Node modules — these are auto-installed via npm install, never commit them
-node_modules/
+# ==========================================
+# SubmitBridge - Git Ignore Configuration
+# ==========================================
 
-# Environment files — contain secrets, never commit
+# Environment variables & secrets (CRITICAL: Never commit credentials)
 .env
+.env.*
+*.env
+**/.env
+**/.env.*
+!.env.example
+!**/.env.example
 
-# Vite build output
+# IDE & Agent Configurations (contains MCP PATs / session tokens)
+.agents/
+.vscode/
+.idea/
+
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Production builds
 dist/
+build/
+**/dist/
+**/build/
 
-# macOS system files
-.DS_Store
-
-# Uploaded student PDFs (don't commit to version control)
-server/uploads/*.pdf
-
-# Local database data and logs
-server/data/
+# Logs
+logs/
 *.log
-*.log*
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
 
-# Test and sample files
-*.pdf
+# Runtime / Test data & Playwright snapshots
 .playwright-mcp/
+.system_generated/
+server/uploads/
+server/data/
+*.pdf
+student_orbit_assignment.docx
+student_orbit_assignment.pdf
 
+# Operating System files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
