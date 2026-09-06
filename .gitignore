@@ -16,4 +16,9 @@ server/uploads/*.pdf
 # Local database data and logs
 server/data/
 *.log
+*.log*
+
+# Test and sample files
+*.pdf
+.playwright-mcp/
 
