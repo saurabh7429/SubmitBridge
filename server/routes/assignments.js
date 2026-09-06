@@ -195,6 +195,7 @@ router.get("/:id", async (req, res) => {
 
     res.json({
       assignment: { ...assignment, shareable_link: shareableLink },
+      shareableLink,
       submissions: submissions || [],
       qrCode,
     });

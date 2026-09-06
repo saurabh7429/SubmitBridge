@@ -3,6 +3,94 @@ const mammoth = require("mammoth");
 
 // ─── TEXT EXTRACTION & PREPROCESSING ──────────────────────────────────────────
 
+const zlib = require("zlib");
+
+/**
+ * Fallback parser that decodes compressed streams (ASCII85/Flate) and extracts text
+ * operators (Tj and TJ) when standard PDF parsers encounter syntax anomalies (e.g., ReportLab quirks).
+ */
+function extractPdfStreamsFallback(buffer) {
+  try {
+    const raw = buffer.toString("binary");
+    let extracted = "";
+    const streamRegex = /stream\r?\n([\s\S]*?)endstream/g;
+    let match;
+
+    while ((match = streamRegex.exec(raw)) !== null) {
+      const rawStream = match[1];
+      let uncompressed = null;
+
+      // Attempt 1: Direct FlateDecode
+      try {
+        uncompressed = zlib.inflateSync(Buffer.from(rawStream, "binary"));
+      } catch (e1) {
+        // Attempt 2: ASCII85 + FlateDecode
+        try {
+          let s = rawStream.replace(/\s+/g, "");
+          if (s.endsWith("~>")) s = s.slice(0, -2);
+          if (s.startsWith("<~")) s = s.slice(2);
+          const bytes = [];
+          for (let i = 0; i < s.length; i += 5) {
+            const chunk = s.slice(i, i + 5);
+            if (chunk === "z") {
+              bytes.push(0, 0, 0, 0);
+              i -= 4;
+              continue;
+            }
+            const pad = 5 - chunk.length;
+            const padded = chunk + "u".repeat(pad);
+            let val = 0;
+            for (let j = 0; j < 5; j++) {
+              val = val * 85 + (padded.charCodeAt(j) - 33);
+            }
+            for (let k = 0; k < 4 - pad; k++) {
+              bytes.push((val >>> (24 - k * 8)) & 255);
+            }
+          }
+          uncompressed = zlib.inflateSync(Buffer.from(bytes));
+        } catch (e2) {}
+      }
+
+      if (uncompressed) {
+        const streamStr = uncompressed.toString("latin1");
+        // Extract simple Tj strings: (text) Tj
+        const tjRegex = /\((.*?)\)\s*Tj/g;
+        let tjMatch;
+        while ((tjMatch = tjRegex.exec(streamStr)) !== null) {
+          extracted += tjMatch[1] + " ";
+        }
+        // Extract TJ array strings: [(text) -20 (more)] TJ
+        const tjArrRegex = /\[(.*?)\]\s*TJ/g;
+        let arrMatch;
+        while ((arrMatch = tjArrRegex.exec(streamStr)) !== null) {
+          const innerMatches = arrMatch[1].match(/\((.*?)\)/g);
+          if (innerMatches) {
+            innerMatches.forEach((m) => {
+              extracted += m.slice(1, -1) + " ";
+            });
+          }
+        }
+      }
+    }
+
+    // Attempt 3: If still empty, scan raw ASCII string literals in the PDF body
+    if (!extracted.trim()) {
+      const literalMatches = raw.match(/\(([^()]{3,})\)/g);
+      if (literalMatches) {
+        extracted = literalMatches
+          .map((m) => m.slice(1, -1))
+          .filter((t) => !t.startsWith("ReportLab") && !t.startsWith("D:20"))
+          .join(" ");
+      }
+    }
+
+    return extracted.replace(/\\([()\\])/g, "$1").trim();
+  } catch (err) {
+    console.warn("Fallback PDF extraction error:", err.message);
+    return "";
+  }
+}
+
 /**
  * Extracts raw text from uploaded PDF or DOCX file buffer.
  * @param {Buffer} buffer - File buffer from Multer memory storage
@@ -23,8 +111,18 @@ async function extractTextFromFile(buffer, mimetype, filename = "") {
     }
 
     // Default to PDF parsing
-    const pdfData = await pdfParse(buffer);
-    return pdfData.text || "";
+    try {
+      const pdfData = await pdfParse(buffer);
+      if (pdfData && pdfData.text && pdfData.text.trim().length > 0) {
+        return pdfData.text;
+      }
+    } catch (parseErr) {
+      console.warn("pdf-parse encountered an error, trying stream fallback:", parseErr.message);
+    }
+
+    // Use fallback stream extractor for PDFs with parser anomalies
+    const fallbackText = extractPdfStreamsFallback(buffer);
+    return fallbackText || "";
   } catch (err) {
     console.error("Error extracting text from file:", err.message);
     return "";
