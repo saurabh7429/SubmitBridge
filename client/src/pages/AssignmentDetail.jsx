@@ -134,6 +134,7 @@ function AssignmentDetail() {
       <SubmissionsTable
         submissions={submissions}
         maxMarks={assignment.max_marks}
+        assignmentTitle={assignment.title}
         gradeInputs={gradeInputs}
         onGradeChange={handleGradeChange}
         onSaveGrade={handleSaveGrade}

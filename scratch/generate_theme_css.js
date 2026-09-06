@@ -1,4 +1,7 @@
-/* =====================================================================
+const fs = require('fs');
+const path = require('path');
+
+const cssContent = `/* =====================================================================
    SubmitBridge — State-of-the-Art EdTech & SaaS Design System
    Electric Indigo • Pure White Glass Surfaces • Refined Slate Typography
    ===================================================================== */
@@ -2182,3 +2185,8 @@ input, textarea, select {
     grid-template-columns: 1fr;
   }
 }
+`;
+
+const targetPath = path.resolve(__dirname, '../client/src/styles/global.css');
+fs.writeFileSync(targetPath, cssContent, 'utf8');
+console.log('Successfully wrote global.css');

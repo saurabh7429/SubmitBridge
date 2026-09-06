@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import Badge from '../common/Badge';
 import StatusPill from '../common/StatusPill';
@@ -7,6 +7,26 @@ import { formatDateTime, getDaysRemaining, isOverdue } from '../../utils/dateUti
 export function AssignmentCard({ assignment, onDelete, onRestore, isActionLoading }) {
   const isDeleted = Boolean(assignment.is_deleted);
   const overdue = isOverdue(assignment.due_date);
+  const [copied, setCopied] = useState(false);
+
+  const studentLink = `${window.location.origin}/submit/${assignment.id}`;
+
+  const handleCopyLink = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(studentLink);
+    } else {
+      const textarea = document.createElement('textarea');
+      textarea.value = studentLink;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+    }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   return (
     <div className={`assignment-card ${isDeleted ? 'assignment-card--deleted' : ''}`}>
@@ -28,7 +48,7 @@ export function AssignmentCard({ assignment, onDelete, onRestore, isActionLoadin
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <polyline points="20 6 9 17 4 12"/>
             </svg>
-            {assignment.submissionCount || 0}
+            <span>{assignment.submissionCount || 0} Submissions</span>
           </Badge>
 
           {!isDeleted ? (
@@ -38,6 +58,7 @@ export function AssignmentCard({ assignment, onDelete, onRestore, isActionLoadin
               disabled={isActionLoading}
               title="Move to Trash (Recoverable for 3 days)"
               className="btn-icon-danger"
+              aria-label="Delete Assignment"
             >
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <polyline points="3 6 5 6 21 6"/>
@@ -83,29 +104,53 @@ export function AssignmentCard({ assignment, onDelete, onRestore, isActionLoadin
           <StatusPill isDeleted={isDeleted} isOverdue={overdue} />
         </div>
 
-        {assignment.due_date && (
-          <div className="meta-pill meta-pill--full">
-            <span className="meta-pill__label">Due</span>
-            <span className={`meta-pill__value ${overdue ? 'text-danger' : ''}`}>
-              {formatDateTime(assignment.due_date)}
-            </span>
-          </div>
-        )}
+        <div className="meta-pill meta-pill--full">
+          <span className="meta-pill__label">Due Date</span>
+          <span className={`meta-pill__value ${overdue ? 'text-danger' : ''}`}>
+            {assignment.due_date ? formatDateTime(assignment.due_date) : 'No deadline set'}
+          </span>
+        </div>
       </div>
 
       {/* Card Footer Actions */}
       <div className="assignment-card__footer">
         {!isDeleted ? (
-          <Link
-            to={`/assignment/${assignment.id}`}
-            className="btn btn-primary-soft btn--full"
-          >
-            <span>View Submissions & QR Code</span>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="5" y1="12" x2="19" y2="12"/>
-              <polyline points="12 5 19 12 12 19"/>
-            </svg>
-          </Link>
+          <div className="assignment-card__btn-row">
+            <Link
+              to={`/assignment/${assignment.id}`}
+              className="btn btn-primary btn-card-primary"
+            >
+              <span>View Submissions</span>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="5" y1="12" x2="19" y2="12"/>
+                <polyline points="12 5 19 12 12 19"/>
+              </svg>
+            </Link>
+
+            <button
+              type="button"
+              onClick={handleCopyLink}
+              title="Copy student submission link"
+              className={`btn btn-secondary btn-card-share ${copied ? 'btn-copy-success' : ''}`}
+            >
+              {copied ? (
+                <>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                  <span>Copied</span>
+                </>
+              ) : (
+                <>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                  </svg>
+                  <span>Copy Link</span>
+                </>
+              )}
+            </button>
+          </div>
         ) : (
           <div className="card-actions-dual">
             <button
