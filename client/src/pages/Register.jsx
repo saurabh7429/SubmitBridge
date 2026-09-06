@@ -1,208 +1,124 @@
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { registerTeacher } from '../api';
+import React, { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import { registerTeacher } from "../api";
+import { useAuth } from "../context/AuthContext";
 
 function Register() {
   const navigate = useNavigate();
-  const [name, setName] = useState('');
-  const [collegeName, setCollegeName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const { login } = useAuth();
+  const [name, setName] = useState("");
+  const [collegeName, setCollegeName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
+    setError("");
     setLoading(true);
-
     try {
       const res = await registerTeacher(name, email, password, collegeName);
-      localStorage.setItem('token', res.data.token);
-      localStorage.setItem('teacher', JSON.stringify(res.data.teacher));
-      navigate('/dashboard');
+      login(res.data.token, res.data.teacher);
+      navigate("/dashboard");
     } catch (err) {
-      setError(err.response?.data?.message || 'Registration failed. Please try again.');
+      setError(
+        err.response?.data?.message || "Registration failed. Please try again."
+      );
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div style={styles.container}>
-      <div style={styles.card}>
-        <div style={styles.header}>
-          <div style={styles.icon}>🎓</div>
-          <h1 style={styles.title}>SubmitBridge</h1>
-          <p style={styles.subtitle}>Create Teacher / Professor Account</p>
+    <div className="auth-canvas page-enter">
+      <div className="auth-card card-neumorphic">
+        <div className="auth-header">
+          <div className="auth-logo-badge">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
+              <path d="M6 12v5c3 3 9 3 12 0v-5"/>
+            </svg>
+          </div>
+          <h1 className="auth-title">
+            Submit<span className="brand-gradient">Bridge</span>
+          </h1>
+          <p className="auth-subtitle">Join thousands of educators streamlining assignment workflows</p>
         </div>
 
-        <h2 style={styles.formHeading}>Register Account</h2>
+        <div className="auth-pill-tag">Create Faculty Account</div>
 
-        {error && <div style={styles.error}>{error}</div>}
+        {error && <div className="alert alert-error">{error}</div>}
 
-        <form onSubmit={handleSubmit}>
-          <div style={styles.field}>
-            <label style={styles.label}>Full Name</label>
+        <form onSubmit={handleSubmit} className="auth-form">
+          <div className="form-group">
+            <label className="form-label">Full Name</label>
             <input
               type="text"
+              className="form-input"
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
-              placeholder="e.g. Dr. Rajesh Sharma"
-              style={styles.input}
+              placeholder="e.g. Dr. Sarah Jenkins"
             />
           </div>
 
-          <div style={styles.field}>
-            <label style={styles.label}>College / Institute Name</label>
+          <div className="form-group">
+            <label className="form-label">College / Institute Name</label>
             <input
               type="text"
+              className="form-input"
               value={collegeName}
               onChange={(e) => setCollegeName(e.target.value)}
               required
-              placeholder="e.g. Indian Institute of Technology"
-              style={styles.input}
+              placeholder="e.g. Stanford University"
             />
           </div>
 
-          <div style={styles.field}>
-            <label style={styles.label}>Email Address</label>
+          <div className="form-group">
+            <label className="form-label">College Email Address</label>
             <input
               type="email"
+              className="form-input"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              placeholder="e.g. rajesh@college.edu"
-              style={styles.input}
+              placeholder="e.g. professor@college.edu"
+              autoComplete="email"
             />
           </div>
 
-          <div style={styles.field}>
-            <label style={styles.label}>Password (Min. 6 characters)</label>
+          <div className="form-group">
+            <label className="form-label">Password</label>
             <input
               type="password"
+              className="form-input"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              minLength={6}
               placeholder="Create a strong password"
-              style={styles.input}
+              autoComplete="new-password"
             />
           </div>
 
-          <button type="submit" disabled={loading} style={styles.button}>
-            {loading ? 'Creating Account...' : 'Register as Teacher'}
+          <button
+            type="submit"
+            disabled={loading}
+            className="btn btn-primary btn-glow btn--full btn--lg"
+          >
+            {loading ? "Creating Account..." : "Create Faculty Account →"}
           </button>
         </form>
 
-        <p style={styles.footerText}>
-          Already have an account?{' '}
-          <Link to="/login" style={styles.link}>
-            Sign In
+        <div className="auth-footer">
+          <span>Already registered? </span>
+          <Link to="/login" className="auth-link">
+            Sign In here
           </Link>
-        </p>
+        </div>
       </div>
     </div>
   );
 }
 
-const styles = {
-  container: {
-    minHeight: '100vh',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: '20px',
-    backgroundColor: '#0f172a',
-  },
-  card: {
-    width: '100%',
-    maxWidth: '460px',
-    backgroundColor: '#ffffff',
-    borderRadius: '12px',
-    padding: '36px',
-    boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.3)',
-  },
-  header: {
-    textAlign: 'center',
-    marginBottom: '20px',
-  },
-  icon: {
-    fontSize: '40px',
-    marginBottom: '6px',
-  },
-  title: {
-    fontSize: '24px',
-    fontWeight: '800',
-    color: '#0f172a',
-    margin: '0 0 4px 0',
-  },
-  subtitle: {
-    fontSize: '13px',
-    color: '#64748b',
-    margin: 0,
-  },
-  formHeading: {
-    fontSize: '17px',
-    fontWeight: '600',
-    color: '#334155',
-    margin: '0 0 16px 0',
-    borderBottom: '1px solid #e2e8f0',
-    paddingBottom: '10px',
-  },
-  field: {
-    marginBottom: '14px',
-  },
-  label: {
-    display: 'block',
-    fontSize: '13px',
-    fontWeight: '600',
-    color: '#475569',
-    marginBottom: '6px',
-  },
-  input: {
-    width: '100%',
-    padding: '10px 12px',
-    border: '1px solid #cbd5e1',
-    borderRadius: '6px',
-    fontSize: '14px',
-    color: '#1e293b',
-    outline: 'none',
-  },
-  button: {
-    width: '100%',
-    padding: '12px',
-    backgroundColor: '#2563eb',
-    color: '#ffffff',
-    border: 'none',
-    borderRadius: '6px',
-    fontSize: '15px',
-    fontWeight: '600',
-    cursor: 'pointer',
-    marginTop: '10px',
-  },
-  error: {
-    backgroundColor: '#fef2f2',
-    color: '#dc2626',
-    border: '1px solid #fecaca',
-    padding: '10px 12px',
-    borderRadius: '6px',
-    fontSize: '13px',
-    marginBottom: '16px',
-  },
-  footerText: {
-    textAlign: 'center',
-    fontSize: '14px',
-    color: '#64748b',
-    marginTop: '20px',
-    marginBottom: 0,
-  },
-  link: {
-    color: '#2563eb',
-    fontWeight: '600',
-  },
-};
-
 export default Register;
-

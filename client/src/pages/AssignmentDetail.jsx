@@ -1,15 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { getAssignment, gradeSubmission } from '../api';
+import React, { useState, useEffect } from "react";
+import { useParams, Link } from "react-router-dom";
+import { getAssignment, gradeSubmission } from "../api";
 
 function AssignmentDetail() {
   const { id } = useParams();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
-
-  // State to track in-place grade edits
   const [gradeInputs, setGradeInputs] = useState({});
   const [savingGradeId, setSavingGradeId] = useState(null);
   const [selectedSummarySub, setSelectedSummarySub] = useState(null);
@@ -18,19 +16,20 @@ function AssignmentDetail() {
     try {
       const res = await getAssignment(id);
       setData(res.data);
-      // Initialize teacher final marks inputs
       const initialGrades = {};
-      res.data.submissions.forEach((sub) => {
+      (res.data.submissions || []).forEach((sub) => {
         initialGrades[sub.id] =
-          sub.teacher_final_marks !== null && sub.teacher_final_marks !== undefined
+          sub.teacher_final_marks !== null &&
+          sub.teacher_final_marks !== undefined
             ? sub.teacher_final_marks
-            : sub.ai_estimated_marks !== null && sub.ai_estimated_marks !== undefined
+            : sub.ai_estimated_marks !== null &&
+              sub.ai_estimated_marks !== undefined
             ? sub.ai_estimated_marks
-            : '';
+            : "";
       });
       setGradeInputs(initialGrades);
     } catch (err) {
-      setError('Failed to load assignment details.');
+      setError("Failed to load assignment details.");
     } finally {
       setLoading(false);
     }
@@ -47,764 +46,540 @@ function AssignmentDetail() {
       `${window.location.origin}/submit/${id}`;
 
     if (navigator.clipboard && window.isSecureContext) {
-      navigator.clipboard.writeText(link).then(() => {
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-      }).catch(() => {
-        fallbackCopy(link);
-      });
+      navigator.clipboard
+        .writeText(link)
+        .then(() => {
+          setCopied(true);
+          setTimeout(() => setCopied(false), 2200);
+        })
+        .catch(() => fallbackCopy(link));
     } else {
       fallbackCopy(link);
     }
   };
 
   const fallbackCopy = (text) => {
-    const textArea = document.createElement('textarea');
-    textArea.value = text;
-    textArea.style.position = 'fixed';
-    textArea.style.left = '-999999px';
-    textArea.style.top = '-999999px';
-    document.body.appendChild(textArea);
-    textArea.focus();
-    textArea.select();
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.left = "-999999px";
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
     try {
-      document.execCommand('copy');
+      document.execCommand("copy");
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      console.error('Fallback copy failed', err);
+      setTimeout(() => setCopied(false), 2200);
+    } catch (e) {
+      console.error("Fallback copy failed", e);
     }
-    document.body.removeChild(textArea);
+    document.body.removeChild(ta);
   };
 
-  const handleGradeChange = (subId, val) => {
+  const handleGradeChange = (subId, val) =>
     setGradeInputs((prev) => ({ ...prev, [subId]: val }));
-  };
 
   const handleSaveGrade = async (subId) => {
     const val = gradeInputs[subId];
-    if (val === '' || isNaN(Number(val))) {
-      alert('Please enter a valid numeric mark.');
+    if (val === "" || isNaN(Number(val))) {
+      alert("Please enter a valid numeric mark.");
       return;
     }
-
     setSavingGradeId(subId);
     try {
       await gradeSubmission(subId, Number(val));
-      // Refresh list to update status badge
       await fetchAssignmentData();
     } catch (err) {
-      alert('Failed to save grade: ' + (err.response?.data?.message || err.message));
+      alert(
+        "Failed to save grade: " +
+          (err.response?.data?.message || err.message)
+      );
     } finally {
       setSavingGradeId(null);
     }
   };
 
-  if (loading) {
+  // ── Skeleton Loader (Avoids whole-page blanking) ──
+  if (loading && !data) {
     return (
-      <div style={styles.loadingContainer}>
-        <p>Loading assignment and submissions...</p>
+      <div className="page-container page-enter">
+        <div className="skeleton-line skeleton-line--pill" style={{ width: 140, marginBottom: 20 }} />
+        <div className="detail-layout">
+          <div className="skeleton-card" style={{ height: 260 }}>
+            <div className="skeleton-line skeleton-line--title" />
+            <div className="skeleton-line skeleton-line--text" />
+            <div className="skeleton-line skeleton-line--text" style={{ width: '80%' }} />
+          </div>
+          <div className="skeleton-card" style={{ height: 260 }}>
+            <div className="skeleton-line skeleton-line--title" style={{ width: 120 }} />
+            <div className="skeleton-line" style={{ height: 160, borderRadius: 12 }} />
+          </div>
+        </div>
       </div>
     );
   }
 
   if (error || !data) {
     return (
-      <div style={styles.loadingContainer}>
-        <p style={{ color: '#dc2626' }}>{error || 'Assignment not found.'}</p>
-        <Link to="/dashboard" style={styles.backBtn}>
-          ← Back to Dashboard
-        </Link>
+      <div className="page-container page-enter">
+        <div className="card-neumorphic empty-state-card" style={{ textAlign: "center", padding: 40 }}>
+          <div className="empty-state__icon">⚠️</div>
+          <h2 style={{ fontSize: 20, marginBottom: 8 }}>{error || "Assignment not found."}</h2>
+          <p style={{ color: "var(--text-muted)", marginBottom: 20 }}>
+            The assignment may have been permanently removed or the link is invalid.
+          </p>
+          <Link to="/dashboard" className="btn btn-primary">
+            ← Back to Dashboard
+          </Link>
+        </div>
       </div>
     );
   }
 
-  const { assignment, submissions, qrCode } = data;
+  const { assignment, submissions = [], qrCode } = data;
+  const isClosed =
+    assignment.due_date && new Date() > new Date(assignment.due_date);
+  const isDeleted = Boolean(assignment.is_deleted);
+  const shareLink =
+    assignment.shareable_link ||
+    data?.shareableLink ||
+    `${window.location.origin}/submit/${id}`;
 
   return (
-    <div style={styles.container}>
-      {/* Top Bar */}
-      <header style={styles.navbar}>
-        <div style={styles.navBrand}>
-          <Link to="/dashboard" style={styles.backBtn}>
-            ← Back to Dashboard
-          </Link>
-          <span style={styles.navTitle}>SubmitBridge Faculty View</span>
-        </div>
-      </header>
+    <div className="page-container page-enter">
+      {/* ── Breadcrumb Back Navigation ── */}
+      <div className="detail-top-bar">
+        <Link to="/dashboard" className="btn-back-pill">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="19" y1="12" x2="5" y2="12"/>
+            <polyline points="12 19 5 12 12 5"/>
+          </svg>
+          <span>Back to Dashboard</span>
+        </Link>
+      </div>
 
-      <main style={styles.main}>
-        {/* Assignment Header Card */}
-        <div style={styles.headerCard}>
-          <div style={styles.headerLeft}>
-            <div style={styles.badgesRow}>
-              <span style={styles.subjectBadge}>
-                {assignment.subject} {assignment.subject_code ? `(${assignment.subject_code})` : ''}
+      {/* ── Detail Header Grid ── */}
+      <div className="detail-hero-grid">
+        {/* Left Column: Assignment Details */}
+        <div className="detail-card-main card-neumorphic">
+          <div className="detail-card-main__header">
+            <div className="badge-group">
+              <span className="badge badge-indigo">
+                {assignment.subject}
+                {assignment.subject_code ? ` • ${assignment.subject_code}` : ""}
               </span>
               {assignment.department && (
-                <span style={styles.deptBadge}>{assignment.department}</span>
+                <span className="badge badge-gray">{assignment.department}</span>
               )}
-              <span style={styles.collegeBadge}>{assignment.college_name}</span>
+              {assignment.college_name && (
+                <span className="badge badge-college">{assignment.college_name}</span>
+              )}
             </div>
 
-            <h1 style={styles.title}>{assignment.title}</h1>
+            <div className="status-indicator-box">
+              {isDeleted ? (
+                <span className="status-pill status-pill--danger">Archived in Trash</span>
+              ) : isClosed ? (
+                <span className="status-pill status-pill--danger">Submissions Closed</span>
+              ) : (
+                <span className="status-pill status-pill--success">
+                  <span className="pulsing-dot pulsing-dot--green" />
+                  Accepting Submissions
+                </span>
+              )}
+            </div>
+          </div>
 
-            <div style={styles.metaGrid}>
-              <div>
-                <span style={styles.metaLabel}>Max Marks:</span>{' '}
-                <strong>{assignment.max_marks}</strong>
-              </div>
-              <div>
-                <span style={styles.metaLabel}>Created:</span>{' '}
+          <h1 className="detail-card-main__title">{assignment.title}</h1>
+
+          <div className="detail-stats-row">
+            <div className="detail-stat">
+              <span className="detail-stat__label">Max Marks</span>
+              <span className="detail-stat__value">{assignment.max_marks} pts</span>
+            </div>
+            <div className="detail-stat">
+              <span className="detail-stat__label">Created</span>
+              <span className="detail-stat__value">
                 {new Date(assignment.created_at).toLocaleDateString()}
-              </div>
-              {assignment.due_date && (
-                <div>
-                  <span style={styles.metaLabel}>Due Date:</span>{' '}
-                  <strong style={{ color: '#dc2626' }}>
-                    {new Date(assignment.due_date).toLocaleString([], {
-                      dateStyle: 'short',
-                      timeStyle: 'short',
-                    })}
-                  </strong>
-                </div>
-              )}
-              <div>
-                <span style={styles.metaLabel}>Submission Status:</span>{' '}
-                <strong
-                  style={{
-                    color:
-                      assignment.due_date && new Date() > new Date(assignment.due_date)
-                        ? '#dc2626'
-                        : '#16a34a',
-                  }}
-                >
-                  {assignment.due_date && new Date() > new Date(assignment.due_date)
-                    ? '⛔ Closed'
-                    : '🟢 Open'}
-                </strong>
-              </div>
-            </div>
-
-            {assignment.instructions && (
-              <div style={styles.instructionsBox}>
-                <span style={styles.instructionsHeading}>📌 Instructions:</span>
-                <p style={styles.instructionsText}>{assignment.instructions}</p>
-              </div>
-            )}
-
-            <div style={styles.questionsBox}>
-              <span style={styles.questionsHeading}>❓ Questions:</span>
-              <pre style={styles.questionsText}>{assignment.questions}</pre>
-            </div>
-          </div>
-
-          {/* QR & Shareable Link Side Box */}
-          <div style={styles.qrSidebar}>
-            <h4 style={styles.qrHeading}>📱 Student Submission QR</h4>
-            {qrCode && (
-              <img src={qrCode} alt="Submission QR" style={styles.qrImage} />
-            )}
-            <div style={{ marginTop: '10px' }}>
-              <button onClick={handleCopyLink} style={styles.copyBtn}>
-                {copied ? '✅ Link Copied!' : '📋 Copy Student Link'}
-              </button>
-            </div>
-            <p style={styles.qrNote}>
-              Students scan this QR or click the link to submit from any device.
-            </p>
-          </div>
-        </div>
-
-        {/* Submissions Section */}
-        <div style={styles.submissionsSection}>
-          <div style={styles.sectionTitleRow}>
-            <h2 style={styles.sectionHeading}>
-              📥 Student Submissions ({submissions.length})
-            </h2>
-            <div style={styles.aiLegend}>
-              <span style={{ fontSize: '12px', color: '#64748b' }}>
-                🤖 AI estimates marks & scans originality. Teacher has final say.
               </span>
             </div>
+            {assignment.due_date && (
+              <div className="detail-stat">
+                <span className="detail-stat__label">Due Deadline</span>
+                <span className={`detail-stat__value ${isClosed ? "text-danger" : ""}`}>
+                  {new Date(assignment.due_date).toLocaleString([], {
+                    month: "short",
+                    day: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </span>
+              </div>
+            )}
+            <div className="detail-stat">
+              <span className="detail-stat__label">Submissions</span>
+              <span className="detail-stat__value text-indigo">{submissions.length}</span>
+            </div>
           </div>
 
-          {submissions.length === 0 ? (
-            <div style={styles.emptySubmissions}>
-              <p style={{ fontSize: '32px', margin: '0 0 8px 0' }}>📭</p>
-              <h3 style={{ margin: '0 0 4px 0', color: '#1e293b' }}>
-                No submissions received yet
-              </h3>
-              <p style={{ margin: 0, color: '#64748b', fontSize: '13px' }}>
-                Share the submission link with students to start receiving assignments.
-              </p>
+          {/* Instructions Box */}
+          {assignment.instructions && (
+            <div className="info-box info-box--neutral">
+              <div className="info-box__title">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <circle cx="12" cy="12" r="10"/>
+                  <line x1="12" y1="16" x2="12" y2="12"/>
+                  <line x1="12" y1="8" x2="12.01" y2="8"/>
+                </svg>
+                <span>Submission Guidelines</span>
+              </div>
+              <p className="info-box__content">{assignment.instructions}</p>
             </div>
-          ) : (
-            <div style={styles.tableCard}>
-              <table style={styles.table}>
-                <thead>
-                  <tr style={styles.tableHeaderRow}>
-                    <th style={styles.th}>#</th>
-                    <th style={styles.th}>Roll Number</th>
-                    <th style={styles.th}>Student Name</th>
-                    <th style={styles.th}>Submitted At</th>
-                    <th style={styles.th}>File</th>
-                    <th style={styles.th}>AI Likelihood (Phase 3)</th>
-                    <th style={styles.th}>AI Mark (Phase 2)</th>
-                    <th style={styles.th}>Final Grade (Teacher)</th>
-                    <th style={styles.th}>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {submissions.map((sub, idx) => {
-                    const aiScore = sub.ai_detection_score;
-                    const isApproved = sub.grading_status === 'TEACHER_APPROVED';
+          )}
 
-                    return (
-                      <tr key={sub.id} style={styles.tableRow}>
-                        <td style={styles.td}>{idx + 1}</td>
-                        <td style={{ ...styles.td, fontWeight: '700', color: '#0f172a' }}>
-                          {sub.roll_number}
-                        </td>
-                        <td style={{ ...styles.td, color: '#334155' }}>
-                          {sub.student_name}
-                        </td>
-                        <td style={{ ...styles.td, fontSize: '12px', color: '#64748b' }}>
-                          {new Date(sub.submitted_at).toLocaleString([], {
-                            dateStyle: 'short',
-                            timeStyle: 'short',
-                          })}
-                        </td>
-                        <td style={styles.td}>
-                          <a
-                            href={sub.file_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            style={styles.fileLink}
-                          >
-                            📄 View File
-                          </a>
-                        </td>
-                        {/* Phase 3: AI Detection Flag */}
-                        <td style={styles.td}>
-                          {aiScore !== null && aiScore !== undefined ? (
-                            <span
-                              style={{
-                                ...styles.aiDetectionBadge,
-                                backgroundColor:
-                                  aiScore > 50
-                                    ? '#fee2e2'
-                                    : aiScore > 20
-                                    ? '#fef3c7'
-                                    : '#ecfdf5',
-                                color:
-                                  aiScore > 50
-                                    ? '#991b1b'
-                                    : aiScore > 20
-                                    ? '#92400e'
-                                    : '#065f46',
-                              }}
-                            >
-                              {aiScore}% AI Flag
-                            </span>
-                          ) : (
-                            <span style={{ fontSize: '11px', color: '#94a3b8' }}>
-                              {sub.ai_detection_status === 'SKIPPED' ? 'Skipped' : 'Not scanned'}
-                            </span>
-                          )}
-                        </td>
-
-                        {/* Phase 2: AI Estimated Mark & Summary */}
-                        <td style={styles.td}>
-                          {sub.ai_estimated_marks !== null && sub.ai_estimated_marks !== undefined ? (
-                            <div>
-                              <span style={styles.aiMarkBadge}>
-                                🤖 {Math.min(Number(assignment.max_marks), Math.max(0, sub.ai_estimated_marks))} / {assignment.max_marks}
-                              </span>
-                              <div>
-                                <button
-                                  onClick={() => setSelectedSummarySub(sub)}
-                                  style={styles.summaryBtn}
-                                >
-                                  View Summary
-                                </button>
-                              </div>
-                            </div>
-                          ) : (
-                            <span style={{ fontSize: '12px', color: '#94a3b8' }}>
-                              Pending
-                            </span>
-                          )}
-                        </td>
-
-                        {/* Teacher Final Mark Override / Approve */}
-                        <td style={styles.td}>
-                          <div style={styles.gradeInputRow}>
-                            <input
-                              type="number"
-                              min={0}
-                              max={assignment.max_marks}
-                              value={gradeInputs[sub.id] ?? ''}
-                              onChange={(e) => handleGradeChange(sub.id, e.target.value)}
-                              style={styles.gradeInput}
-                              placeholder="Marks"
-                            />
-                            <button
-                              onClick={() => handleSaveGrade(sub.id)}
-                              disabled={savingGradeId === sub.id}
-                              style={{
-                                ...styles.saveGradeBtn,
-                                backgroundColor: isApproved ? '#16a34a' : '#2563eb',
-                              }}
-                            >
-                              {savingGradeId === sub.id
-                                ? '...'
-                                : isApproved
-                                ? '✓ Approved'
-                                : 'Approve'}
-                            </button>
-                          </div>
-                        </td>
-
-                        {/* Status */}
-                        <td style={styles.td}>
-                          <span
-                            style={{
-                              ...styles.statusBadge,
-                              backgroundColor: isApproved
-                                ? '#dcfce7'
-                                : sub.grading_status === 'AI_ESTIMATED'
-                                ? '#e0f2fe'
-                                : '#f1f5f9',
-                              color: isApproved
-                                ? '#15803d'
-                                : sub.grading_status === 'AI_ESTIMATED'
-                                ? '#0369a1'
-                                : '#475569',
-                            }}
-                          >
-                            {isApproved
-                              ? 'Teacher Approved'
-                              : sub.grading_status === 'AI_ESTIMATED'
-                              ? 'AI Estimated'
-                              : 'Pending'}
-                          </span>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+          {/* Questions Box */}
+          {assignment.questions && (
+            <div className="info-box info-box--primary">
+              <div className="info-box__title">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                  <line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+                <span>Questions / Problem Statements</span>
+              </div>
+              <p className="info-box__content whitespace-pre-line">{assignment.questions}</p>
             </div>
           )}
         </div>
 
-        {/* AI Summary Modal Popup */}
-        {selectedSummarySub && (
-          <div style={styles.modalOverlay} onClick={() => setSelectedSummarySub(null)}>
-            <div style={styles.modalContent} onClick={(e) => e.stopPropagation()}>
-              <div style={styles.modalHeader}>
-                <h3 style={{ margin: 0, color: '#0f172a' }}>
-                  🤖 AI Assessment Summary — {selectedSummarySub.student_name} ({selectedSummarySub.roll_number})
-                </h3>
-                <button
-                  onClick={() => setSelectedSummarySub(null)}
-                  style={styles.modalCloseBtn}
-                >
-                  ✕
-                </button>
-              </div>
+        {/* Right Column: QR Code & Share Portal */}
+        <div className="detail-card-qr card-neumorphic">
+          <div className="qr-card-header">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect width="5" height="5" x="3" y="3" rx="1"/>
+              <rect width="5" height="5" x="16" y="3" rx="1"/>
+              <rect width="5" height="5" x="3" y="16" rx="1"/>
+              <path d="M21 16h-3a2 2 0 0 0-2 2v3"/>
+              <path d="M21 21v.01"/>
+              <path d="M12 7v3a2 2 0 0 1-2 2H7"/>
+              <path d="M3 12h.01"/>
+              <path d="M12 3h.01"/>
+              <path d="M12 16v.01"/>
+              <path d="M16 12h1"/>
+              <path d="M21 12v.01"/>
+              <path d="M12 21v-1"/>
+            </svg>
+            <span>Student Submission QR</span>
+          </div>
 
-              <div style={styles.modalBody}>
-                <div style={{ marginBottom: '16px' }}>
-                  <strong>Estimated Mark:</strong>{' '}
-                  <span style={{ color: '#2563eb', fontSize: '18px', fontWeight: '800' }}>
-                    {selectedSummarySub.ai_estimated_marks} / {assignment.max_marks}
-                  </span>
-                </div>
+          <div className="qr-wrapper">
+            {qrCode ? (
+              <img src={qrCode} alt="Student Submission QR Code" className="qr-image" />
+            ) : (
+              <div className="qr-placeholder">QR Code Unavailable</div>
+            )}
+          </div>
 
-                <div style={{ marginBottom: '16px' }}>
-                  <strong style={{ display: 'block', marginBottom: '4px' }}>
-                    Summary of Submission:
-                  </strong>
-                  <p style={{ margin: 0, backgroundColor: '#f8fafc', padding: '12px', borderRadius: '6px', fontSize: '14px', lineHeight: '1.5' }}>
-                    {selectedSummarySub.ai_summary || 'No summary available.'}
-                  </p>
-                </div>
+          <div className="qr-actions">
+            <button
+              type="button"
+              onClick={handleCopyLink}
+              className={`btn btn-copy-link ${copied ? "btn-copy-link--copied" : ""}`}
+            >
+              {copied ? (
+                <>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                  <span>Copied to Clipboard!</span>
+                </>
+              ) : (
+                <>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <rect width="14" height="14" x="8" y="8" rx="2" ry="2"/>
+                    <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>
+                  </svg>
+                  <span>Copy Student Link</span>
+                </>
+              )}
+            </button>
 
-                {selectedSummarySub.ai_reasoning && (
-                  <div>
-                    <strong style={{ display: 'block', marginBottom: '4px' }}>
-                      Marking Justification:
-                    </strong>
-                    <p style={{ margin: 0, backgroundColor: '#eff6ff', padding: '12px', borderRadius: '6px', fontSize: '13px', color: '#1e40af', lineHeight: '1.5' }}>
-                      {selectedSummarySub.ai_reasoning}
-                    </p>
-                  </div>
-                )}
-              </div>
+            <a
+              href={shareLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn btn-secondary btn--sm btn-portal-test"
+            >
+              <span>Test Student Portal</span>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                <polyline points="15 3 21 3 21 9"/>
+                <line x1="10" y1="14" x2="21" y2="3"/>
+              </svg>
+            </a>
+          </div>
 
-              <div style={styles.modalFooter}>
-                <button
-                  onClick={() => setSelectedSummarySub(null)}
-                  style={styles.modalDoneBtn}
-                >
-                  Close
-                </button>
-              </div>
-            </div>
+          <p className="qr-caption">
+            Students scan from their smartphones or click the link to submit PDFs/DOCX.
+          </p>
+        </div>
+      </div>
+
+      {/* ── Submissions Table Section ── */}
+      <div className="submissions-panel card-neumorphic">
+        <div className="submissions-panel__header">
+          <div>
+            <h2 className="submissions-panel__title">
+              Student Submissions ({submissions.length})
+            </h2>
+            <p className="submissions-panel__subtitle">
+              AI estimates marks & checks originality. You have the ultimate authority to approve or adjust marks.
+            </p>
+          </div>
+        </div>
+
+        {submissions.length === 0 ? (
+          <div className="empty-state">
+            <div className="empty-state__icon">📬</div>
+            <h3 className="empty-state__title">No submissions received yet</h3>
+            <p className="empty-state__desc">
+              Share the QR code or link with your class. Submissions will appear here instantly in real-time.
+            </p>
+          </div>
+        ) : (
+          <div className="table-responsive">
+            <table className="modern-table">
+              <thead>
+                <tr>
+                  <th style={{ width: 44 }}>#</th>
+                  <th>Roll No.</th>
+                  <th>Student Name</th>
+                  <th>Submitted At</th>
+                  <th>Document</th>
+                  <th>AI Likelihood</th>
+                  <th>AI Estimate</th>
+                  <th>Final Grade</th>
+                  <th>Grading Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {submissions.map((sub, idx) => {
+                  const aiScore = sub.ai_detection_score;
+                  const isApproved = sub.grading_status === "TEACHER_APPROVED";
+
+                  return (
+                    <tr key={sub.id} className="table-row">
+                      <td className="cell-muted">{idx + 1}</td>
+                      <td className="cell-roll">
+                        <strong>{sub.roll_number}</strong>
+                      </td>
+                      <td className="cell-name">{sub.student_name}</td>
+                      <td className="cell-time">
+                        {new Date(sub.submitted_at).toLocaleString([], {
+                          month: "short",
+                          day: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </td>
+                      <td>
+                        <a
+                          href={sub.file_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="file-badge-link"
+                          title="Open uploaded file"
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
+                            <polyline points="14 2 14 8 20 8"/>
+                          </svg>
+                          <span>View Doc</span>
+                        </a>
+                      </td>
+
+                      {/* AI Detection Score */}
+                      <td>
+                        {aiScore !== null && aiScore !== undefined ? (
+                          <span
+                            className={`badge ${
+                              aiScore > 50
+                                ? "badge-red"
+                                : aiScore > 20
+                                ? "badge-amber"
+                                : "badge-emerald"
+                            }`}
+                          >
+                            {aiScore > 50 ? "⚠️ " : aiScore > 20 ? "⚡ " : "✓ "}
+                            {aiScore}% AI
+                          </span>
+                        ) : (
+                          <span className="text-faint-badge">
+                            {sub.ai_detection_status === "SKIPPED"
+                              ? "Skipped"
+                              : "Not Scanned"}
+                          </span>
+                        )}
+                      </td>
+
+                      {/* AI Estimated Mark */}
+                      <td>
+                        {sub.ai_estimated_marks !== null &&
+                        sub.ai_estimated_marks !== undefined ? (
+                          <div className="ai-mark-cell">
+                            <span className="ai-mark-pill">
+                              🤖 {Math.min(
+                                Number(assignment.max_marks),
+                                Math.max(0, sub.ai_estimated_marks)
+                              )} / {assignment.max_marks}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => setSelectedSummarySub(sub)}
+                              className="btn-link-summary"
+                            >
+                              AI Summary →
+                            </button>
+                          </div>
+                        ) : (
+                          <span className="text-faint-badge">Pending</span>
+                        )}
+                      </td>
+
+                      {/* Teacher Grade Input & Approve */}
+                      <td>
+                        <div className="grade-action-group">
+                          <input
+                            type="number"
+                            min={0}
+                            max={assignment.max_marks}
+                            value={gradeInputs[sub.id] ?? ""}
+                            onChange={(e) =>
+                              handleGradeChange(sub.id, e.target.value)
+                            }
+                            className="input-grade"
+                            placeholder="Pts"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleSaveGrade(sub.id)}
+                            disabled={savingGradeId === sub.id}
+                            className={`btn btn--sm ${
+                              isApproved ? "btn-grade-approved" : "btn-primary"
+                            }`}
+                          >
+                            {savingGradeId === sub.id ? (
+                              "..."
+                            ) : isApproved ? (
+                              <>
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                                  <polyline points="20 6 9 17 4 12"/>
+                                </svg>
+                                <span>Approved</span>
+                              </>
+                            ) : (
+                              "Approve"
+                            )}
+                          </button>
+                        </div>
+                      </td>
+
+                      {/* Final Status */}
+                      <td>
+                        <span
+                          className={`badge ${
+                            isApproved
+                              ? "badge-emerald"
+                              : sub.grading_status === "AI_ESTIMATED"
+                              ? "badge-indigo"
+                              : "badge-gray"
+                          }`}
+                        >
+                          {isApproved
+                            ? "Verified"
+                            : sub.grading_status === "AI_ESTIMATED"
+                            ? "AI Evaluated"
+                            : "Submitted"}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         )}
-      </main>
+      </div>
+
+      {/* ── AI Summary Modal ── */}
+      {selectedSummarySub && (
+        <div
+          className="modal-overlay"
+          onClick={() => setSelectedSummarySub(null)}
+        >
+          <div
+            className="modal-card card-neumorphic"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="modal-card__header">
+              <div className="modal-card__title">
+                <span className="modal-icon">🤖</span>
+                <div>
+                  <h3 style={{ fontSize: 17, fontWeight: 700 }}>AI Assessment Report</h3>
+                  <p style={{ fontSize: 13, color: "var(--text-muted)" }}>
+                    {selectedSummarySub.student_name} ({selectedSummarySub.roll_number})
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedSummarySub(null)}
+                className="modal-close-btn"
+                aria-label="Close"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="modal-card__body">
+              <div className="modal-score-banner">
+                <span className="modal-score-label">Estimated AI Score</span>
+                <span className="modal-score-number">
+                  {selectedSummarySub.ai_estimated_marks} <span style={{ fontSize: 16, color: "var(--text-muted)" }}>/ {assignment.max_marks}</span>
+                </span>
+              </div>
+
+              <div className="modal-section">
+                <span className="modal-section__heading">Submission Summary</span>
+                <div className="modal-text-block">
+                  {selectedSummarySub.ai_summary || "No summary provided by AI evaluator."}
+                </div>
+              </div>
+
+              {selectedSummarySub.ai_reasoning && (
+                <div className="modal-section">
+                  <span className="modal-section__heading">Marking Justification & Rationale</span>
+                  <div className="modal-text-block modal-text-block--highlight">
+                    {selectedSummarySub.ai_reasoning}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="modal-card__footer">
+              <button
+                type="button"
+                onClick={() => setSelectedSummarySub(null)}
+                className="btn btn-secondary btn--full"
+              >
+                Close Report
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-const styles = {
-  container: {
-    minHeight: '100vh',
-    backgroundColor: '#f1f5f9',
-  },
-  navbar: {
-    backgroundColor: '#0f172a',
-    color: '#ffffff',
-    padding: '14px 32px',
-  },
-  navBrand: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '16px',
-  },
-  backBtn: {
-    color: '#94a3b8',
-    fontSize: '13px',
-    fontWeight: '600',
-  },
-  navTitle: {
-    fontSize: '17px',
-    fontWeight: '800',
-  },
-  loadingContainer: {
-    minHeight: '80vh',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    color: '#64748b',
-  },
-  main: {
-    maxWidth: '1280px',
-    margin: '28px auto',
-    padding: '0 20px 60px 20px',
-  },
-  headerCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: '12px',
-    padding: '28px',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-    border: '1px solid #e2e8f0',
-    display: 'flex',
-    gap: '32px',
-    marginBottom: '32px',
-    flexWrap: 'wrap',
-  },
-  headerLeft: {
-    flex: '1 1 500px',
-  },
-  badgesRow: {
-    display: 'flex',
-    gap: '8px',
-    marginBottom: '12px',
-    flexWrap: 'wrap',
-  },
-  subjectBadge: {
-    backgroundColor: '#eff6ff',
-    color: '#1d4ed8',
-    padding: '4px 10px',
-    borderRadius: '16px',
-    fontSize: '12px',
-    fontWeight: '700',
-  },
-  deptBadge: {
-    backgroundColor: '#f8fafc',
-    color: '#475569',
-    border: '1px solid #e2e8f0',
-    padding: '3px 8px',
-    borderRadius: '12px',
-    fontSize: '11px',
-  },
-  collegeBadge: {
-    backgroundColor: '#f1f5f9',
-    color: '#334155',
-    padding: '3px 8px',
-    borderRadius: '12px',
-    fontSize: '11px',
-  },
-  title: {
-    fontSize: '22px',
-    fontWeight: '800',
-    color: '#0f172a',
-    margin: '0 0 16px 0',
-  },
-  metaGrid: {
-    display: 'flex',
-    gap: '24px',
-    fontSize: '13px',
-    color: '#475569',
-    marginBottom: '16px',
-    flexWrap: 'wrap',
-  },
-  metaLabel: {
-    color: '#64748b',
-  },
-  instructionsBox: {
-    backgroundColor: '#f8fafc',
-    border: '1px solid #e2e8f0',
-    borderRadius: '6px',
-    padding: '12px',
-    marginBottom: '12px',
-  },
-  instructionsHeading: {
-    fontSize: '12px',
-    fontWeight: '700',
-    color: '#475569',
-  },
-  instructionsText: {
-    margin: '4px 0 0 0',
-    fontSize: '13px',
-    color: '#334155',
-    lineHeight: '1.4',
-  },
-  questionsBox: {
-    backgroundColor: '#ffffff',
-    border: '1px solid #cbd5e1',
-    borderRadius: '6px',
-    padding: '12px',
-  },
-  questionsHeading: {
-    fontSize: '12px',
-    fontWeight: '700',
-    color: '#1e293b',
-  },
-  questionsText: {
-    margin: '4px 0 0 0',
-    fontSize: '13px',
-    color: '#1e293b',
-    whiteSpace: 'pre-wrap',
-    fontFamily: 'inherit',
-    lineHeight: '1.5',
-  },
-  qrSidebar: {
-    width: '240px',
-    textAlign: 'center',
-    borderLeft: '1px solid #f1f5f9',
-    paddingLeft: '24px',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-  },
-  qrHeading: {
-    fontSize: '13px',
-    fontWeight: '700',
-    color: '#334155',
-    margin: '0 0 12px 0',
-  },
-  qrImage: {
-    width: '180px',
-    height: '180px',
-    borderRadius: '8px',
-    border: '1px solid #cbd5e1',
-  },
-  copyBtn: {
-    padding: '8px 14px',
-    backgroundColor: '#2563eb',
-    color: '#ffffff',
-    border: 'none',
-    borderRadius: '6px',
-    fontSize: '12px',
-    fontWeight: '600',
-    cursor: 'pointer',
-  },
-  qrNote: {
-    fontSize: '11px',
-    color: '#94a3b8',
-    margin: '8px 0 0 0',
-    lineHeight: '1.3',
-  },
-  submissionsSection: {
-    backgroundColor: '#ffffff',
-    borderRadius: '12px',
-    padding: '28px',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-    border: '1px solid #e2e8f0',
-  },
-  sectionTitleRow: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '20px',
-    flexWrap: 'wrap',
-    gap: '12px',
-  },
-  sectionHeading: {
-    fontSize: '20px',
-    fontWeight: '800',
-    color: '#0f172a',
-    margin: 0,
-  },
-  emptySubmissions: {
-    textAlign: 'center',
-    padding: '48px',
-    color: '#64748b',
-  },
-  tableCard: {
-    overflowX: 'auto',
-  },
-  table: {
-    width: '100%',
-    borderCollapse: 'collapse',
-    textAlign: 'left',
-  },
-  tableHeaderRow: {
-    backgroundColor: '#f8fafc',
-    borderBottom: '2px solid #e2e8f0',
-  },
-  th: {
-    padding: '12px 14px',
-    fontSize: '12px',
-    fontWeight: '700',
-    color: '#475569',
-    textTransform: 'uppercase',
-    letterSpacing: '0.025em',
-  },
-  tableRow: {
-    borderBottom: '1px solid #f1f5f9',
-  },
-  td: {
-    padding: '14px',
-    fontSize: '13px',
-    verticalAlign: 'middle',
-  },
-  fileLink: {
-    color: '#2563eb',
-    fontWeight: '600',
-    fontSize: '12px',
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: '4px',
-  },
-  aiDetectionBadge: {
-    display: 'inline-block',
-    padding: '3px 8px',
-    borderRadius: '12px',
-    fontSize: '11px',
-    fontWeight: '700',
-  },
-  aiMarkBadge: {
-    display: 'inline-block',
-    backgroundColor: '#eff6ff',
-    color: '#1d4ed8',
-    padding: '3px 8px',
-    borderRadius: '6px',
-    fontSize: '12px',
-    fontWeight: '700',
-    marginBottom: '4px',
-  },
-  summaryBtn: {
-    background: 'none',
-    border: 'none',
-    color: '#2563eb',
-    fontSize: '11px',
-    textDecoration: 'underline',
-    cursor: 'pointer',
-    padding: 0,
-  },
-  gradeInputRow: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '6px',
-  },
-  gradeInput: {
-    width: '56px',
-    padding: '6px 8px',
-    border: '1px solid #cbd5e1',
-    borderRadius: '4px',
-    fontSize: '13px',
-    textAlign: 'center',
-    outline: 'none',
-  },
-  saveGradeBtn: {
-    padding: '6px 10px',
-    color: '#ffffff',
-    border: 'none',
-    borderRadius: '4px',
-    fontSize: '11px',
-    fontWeight: '700',
-    cursor: 'pointer',
-  },
-  statusBadge: {
-    display: 'inline-block',
-    padding: '3px 8px',
-    borderRadius: '12px',
-    fontSize: '11px',
-    fontWeight: '600',
-    whiteSpace: 'nowrap',
-  },
-  modalOverlay: {
-    position: 'fixed',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 1000,
-    padding: '20px',
-  },
-  modalContent: {
-    backgroundColor: '#ffffff',
-    borderRadius: '12px',
-    maxWidth: '560px',
-    width: '100%',
-    padding: '24px',
-    boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2)',
-  },
-  modalHeader: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '16px',
-    borderBottom: '1px solid #f1f5f9',
-    paddingBottom: '12px',
-  },
-  modalCloseBtn: {
-    background: 'none',
-    border: 'none',
-    fontSize: '18px',
-    cursor: 'pointer',
-    color: '#64748b',
-  },
-  modalBody: {
-    fontSize: '14px',
-    color: '#334155',
-  },
-  modalFooter: {
-    marginTop: '20px',
-    textAlign: 'right',
-  },
-  modalDoneBtn: {
-    padding: '8px 18px',
-    backgroundColor: '#2563eb',
-    color: '#ffffff',
-    border: 'none',
-    borderRadius: '6px',
-    fontSize: '13px',
-    fontWeight: '600',
-    cursor: 'pointer',
-  },
-};
-
 export default AssignmentDetail;
-

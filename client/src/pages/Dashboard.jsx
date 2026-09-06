@@ -1,54 +1,52 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { getAssignments, deleteAssignment, restoreAssignment } from '../api';
+import React, { useState, useEffect } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import { deleteAssignment, restoreAssignment } from "../api";
+import { useAssignments } from "../context/AssignmentsContext";
+import { useAuth } from "../context/AuthContext";
 
 function Dashboard() {
   const navigate = useNavigate();
-  const [teacher, setTeacher] = useState(null);
-  const [assignments, setAssignments] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [activeTab, setActiveTab] = useState('active'); // 'active' or 'trash'
+  const { teacher } = useAuth();
+  const {
+    assignments,
+    hasLoaded,
+    loading,
+    error,
+    refreshAssignments,
+    setAssignments,
+  } = useAssignments();
+
+  const [activeTab, setActiveTab] = useState("active"); // "active" | "trash"
   const [actionLoadingId, setActionLoadingId] = useState(null);
 
-  const fetchAssignments = async () => {
-    try {
-      const res = await getAssignments();
-      setAssignments(res.data || []);
-    } catch (err) {
-      if (err.response?.status === 401) {
-        localStorage.clear();
-        navigate('/login');
-      } else {
-        setError('Failed to load assignments.');
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    // Load cached teacher info from localStorage
-    const storedTeacher = localStorage.getItem('teacher');
-    if (storedTeacher) {
-      setTeacher(JSON.parse(storedTeacher));
-    }
-
-    fetchAssignments();
-  }, [navigate]);
+    // If we already loaded data before, fetch silently in background.
+    // If first load, show skeleton.
+    refreshAssignments(hasLoaded).catch((err) => {
+      if (err.response?.status === 401) {
+        navigate("/login");
+      }
+    });
+  }, [hasLoaded, navigate, refreshAssignments]);
 
   const handleDelete = async (id, title) => {
-    const confirmDelete = window.confirm(
-      `Are you sure you want to delete "${title}"?\n\nIt will be moved to Trash. Submissions will be blocked, but you can recover it within 3 days.`
+    const ok = window.confirm(
+      `Move "${title}" to Trash?\n\nSubmissions will be paused, but you can restore it within 3 days.`
     );
-    if (!confirmDelete) return;
+    if (!ok) return;
 
     setActionLoadingId(id);
     try {
       await deleteAssignment(id);
-      await fetchAssignments();
+      // Optimistic update
+      setAssignments((prev) =>
+        prev.map((a) =>
+          a.id === id ? { ...a, is_deleted: true, deleted_at: new Date().toISOString() } : a
+        )
+      );
+      await refreshAssignments(true);
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to delete assignment.');
+      alert(err.response?.data?.message || "Failed to delete assignment.");
     } finally {
       setActionLoadingId(null);
     }
@@ -58,514 +56,328 @@ function Dashboard() {
     setActionLoadingId(id);
     try {
       await restoreAssignment(id);
-      await fetchAssignments();
+      // Optimistic update
+      setAssignments((prev) =>
+        prev.map((a) =>
+          a.id === id ? { ...a, is_deleted: false, deleted_at: null } : a
+        )
+      );
+      await refreshAssignments(true);
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to restore assignment.');
+      alert(err.response?.data?.message || "Failed to restore assignment.");
     } finally {
       setActionLoadingId(null);
     }
   };
 
   const getDaysRemaining = (deletedAt) => {
-    if (!deletedAt) return 3;
-    const diffMs = 3 * 24 * 60 * 60 * 1000 - (Date.now() - new Date(deletedAt).getTime());
+    if (!deletedAt) return "3d remaining";
+    const diffMs =
+      3 * 24 * 60 * 60 * 1000 - (Date.now() - new Date(deletedAt).getTime());
     const hoursLeft = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60)));
     const daysLeft = Math.floor(hoursLeft / 24);
-    if (daysLeft >= 1) {
-      return `${daysLeft}d ${hoursLeft % 24}h remaining`;
-    }
-    return `${hoursLeft}h remaining`;
+    return daysLeft >= 1
+      ? `${daysLeft}d ${hoursLeft % 24}h left`
+      : `${hoursLeft}h left`;
   };
 
-  const handleLogout = () => {
-    localStorage.clear();
-    navigate('/login');
-  };
+  const activeAssignments = assignments.filter((a) => !a.is_deleted);
+  const trashAssignments = assignments.filter((a) => a.is_deleted);
+  const totalSubmissions = assignments.reduce(
+    (acc, a) => acc + (Number(a.submissionCount) || 0),
+    0
+  );
+
+  const displayed = activeTab === "active" ? activeAssignments : trashAssignments;
 
   return (
-    <div style={styles.container}>
-      {/* Top Navigation Bar */}
-      <header style={styles.navbar}>
-        <div style={styles.navBrand}>
-          <span style={styles.navLogo}>🎓</span>
-          <div>
-            <div style={styles.navTitle}>SubmitBridge</div>
-            <div style={styles.navCollege}>
-              {teacher?.collegeName || 'Faculty Portal'}
-            </div>
+    <div className="page-container page-enter">
+      {/* ── Welcome Banner with Metrics ── */}
+      <div className="dashboard-hero">
+        <div className="dashboard-hero__content">
+          <div className="dashboard-hero__badge">
+            <span className="pulsing-dot" />
+            Faculty Portal Active
           </div>
+          <h1 className="dashboard-hero__title">
+            Welcome back{teacher?.name ? `, Prof. ${teacher.name}` : ""}
+          </h1>
+          <p className="dashboard-hero__subtitle">
+            Create assignments, distribute instant QR codes, and automate grading with AI analysis.
+          </p>
         </div>
 
-        <div style={styles.navUser}>
-          <span style={styles.userName}>
-            Welcome, <strong>{teacher?.name || 'Professor'}</strong>
-          </span>
-          <button onClick={handleLogout} style={styles.logoutBtn}>
-            Logout
-          </button>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main style={styles.main}>
-        <div style={styles.sectionHeader}>
-          <div>
-            <h1 style={styles.heading}>My Assignments</h1>
-            <p style={styles.subheading}>
-              Manage assignments, share student links, and review submissions with AI assistance
-            </p>
-          </div>
-          <Link to="/create" style={styles.createBtn}>
-            + Create New Assignment
+        <div className="dashboard-hero__action">
+          <Link to="/create" className="btn btn-primary btn-glow">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"/>
+              <line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            <span>Create Assignment</span>
           </Link>
         </div>
+      </div>
 
-        {/* Tab Navigation: Active vs Trash */}
-        <div style={styles.tabRow}>
-          <button
-            onClick={() => setActiveTab('active')}
-            style={{
-              ...styles.tabBtn,
-              ...(activeTab === 'active' ? styles.tabBtnActive : {}),
-            }}
-          >
-            📚 Active Assignments (
-            {assignments.filter((a) => !a.is_deleted).length})
-          </button>
-          <button
-            onClick={() => setActiveTab('trash')}
-            style={{
-              ...styles.tabBtn,
-              ...(activeTab === 'trash' ? styles.tabBtnActive : {}),
-            }}
-          >
-            🗑️ Trash (
-            {assignments.filter((a) => a.is_deleted).length})
-          </button>
+      {/* ── Quick Stat Widgets ── */}
+      <div className="stats-grid">
+        <div className="stat-card">
+          <div className="stat-card__icon stat-card__icon--indigo">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/>
+              <path d="M6 6h10"/>
+              <path d="M6 10h10"/>
+            </svg>
+          </div>
+          <div className="stat-card__data">
+            <span className="stat-card__value">{activeAssignments.length}</span>
+            <span className="stat-card__label">Active Assignments</span>
+          </div>
         </div>
 
-        {error && <div style={styles.error}>{error}</div>}
-
-        {loading ? (
-          <div style={styles.emptyState}>
-            <p>Loading your assignments...</p>
+        <div className="stat-card">
+          <div className="stat-card__icon stat-card__icon--emerald">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
           </div>
-        ) : (
-          (() => {
-            const displayedAssignments = assignments.filter((a) =>
-              activeTab === 'active' ? !a.is_deleted : a.is_deleted
-            );
+          <div className="stat-card__data">
+            <span className="stat-card__value">{totalSubmissions}</span>
+            <span className="stat-card__label">Student Submissions</span>
+          </div>
+        </div>
 
-            if (displayedAssignments.length === 0) {
-              return (
-                <div style={styles.emptyCard}>
-                  <div style={{ fontSize: '48px', marginBottom: '12px' }}>
-                    {activeTab === 'active' ? '📋' : '🗑️'}
-                  </div>
-                  <h3 style={{ margin: '0 0 8px 0', color: '#1e293b' }}>
-                    {activeTab === 'active'
-                      ? 'No active assignments created yet'
-                      : 'Trash is empty'}
-                  </h3>
-                  <p
-                    style={{
-                      color: '#64748b',
-                      margin: '0 0 20px 0',
-                      fontSize: '14px',
-                    }}
-                  >
-                    {activeTab === 'active'
-                      ? 'Create your first assignment to generate a permanent submission link & QR code for your students.'
-                      : 'Deleted assignments appear here and can be recovered within 3 days before permanent removal.'}
-                  </p>
-                  {activeTab === 'active' && (
-                    <Link to="/create" style={styles.createBtn}>
-                      + Create First Assignment
-                    </Link>
-                  )}
-                </div>
-              );
-            }
+        <div className="stat-card">
+          <div className="stat-card__icon stat-card__icon--amber">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="3 6 5 6 21 6"/>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+            </svg>
+          </div>
+          <div className="stat-card__data">
+            <span className="stat-card__value">{trashAssignments.length}</span>
+            <span className="stat-card__label">In Trash (3-Day Retention)</span>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Section Control Header & Tabs ── */}
+      <div className="section-toolbar">
+        <div className="segmented-control">
+          <button
+            type="button"
+            className={`segmented-control__item ${activeTab === "active" ? "active" : ""}`}
+            onClick={() => setActiveTab("active")}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+            </svg>
+            <span>Active Assignments</span>
+            <span className="segmented-control__count">{activeAssignments.length}</span>
+          </button>
+
+          <button
+            type="button"
+            className={`segmented-control__item ${activeTab === "trash" ? "active" : ""}`}
+            onClick={() => setActiveTab("trash")}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="3 6 5 6 21 6"/>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+            </svg>
+            <span>Trash</span>
+            <span className="segmented-control__count">{trashAssignments.length}</span>
+          </button>
+        </div>
+      </div>
+
+      {error && <div className="alert alert-error">{error}</div>}
+
+      {/* ── Content View ── */}
+      {!hasLoaded && loading ? (
+        <div className="assignment-grid">
+          {[1, 2, 3].map((n) => (
+            <div key={n} className="skeleton-card">
+              <div className="skeleton-line skeleton-line--pill" />
+              <div className="skeleton-line skeleton-line--title" />
+              <div className="skeleton-line skeleton-line--text" />
+              <div className="skeleton-line skeleton-line--btn" />
+            </div>
+          ))}
+        </div>
+      ) : displayed.length === 0 ? (
+        <div className="card-neumorphic empty-state-card">
+          <div className="empty-state">
+            <div className="empty-state__icon">
+              {activeTab === "active" ? "📝" : "🗑️"}
+            </div>
+            <h3 className="empty-state__title">
+              {activeTab === "active"
+                ? "No active assignments yet"
+                : "Trash is completely empty"}
+            </h3>
+            <p className="empty-state__desc">
+              {activeTab === "active"
+                ? "Create an assignment to instantly get a QR code and shareable link for students."
+                : "Assignments moved to trash can be restored within 3 days before permanent deletion."}
+            </p>
+            {activeTab === "active" && (
+              <Link to="/create" className="btn btn-primary">
+                + Create Your First Assignment
+              </Link>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div className="assignment-grid">
+          {displayed.map((asgn) => {
+            const isDeleted = asgn.is_deleted;
+            const isOverdue =
+              asgn.due_date && new Date() > new Date(asgn.due_date);
 
             return (
-              <div style={styles.grid}>
-                {displayedAssignments.map((asgn) => {
-                  const isDeleted = asgn.is_deleted;
+              <div
+                key={asgn.id}
+                className={`assignment-card ${isDeleted ? "assignment-card--deleted" : ""}`}
+              >
+                {/* Top decorative gradient bar */}
+                <div className="assignment-card__bar" />
 
-                  return (
-                    <div
-                      key={asgn.id}
-                      style={{
-                        ...styles.card,
-                        ...(isDeleted ? styles.cardDeleted : {}),
-                      }}
-                    >
-                      <div style={styles.cardHeader}>
-                        <div>
-                          <span style={styles.subjectBadge}>
-                            {asgn.subject}{' '}
-                            {asgn.subject_code ? `(${asgn.subject_code})` : ''}
-                          </span>
-                          {asgn.department && (
-                            <span style={styles.deptBadge}>
-                              {asgn.department}
-                            </span>
-                          )}
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span style={styles.countBadge}>
-                            📥 {asgn.submissionCount || 0} Submitted
-                          </span>
-                          {!isDeleted ? (
-                            <button
-                              onClick={() => handleDelete(asgn.id, asgn.title)}
-                              disabled={actionLoadingId === asgn.id}
-                              title="Delete assignment (Recoverable for 3 days)"
-                              style={styles.deleteBtn}
-                            >
-                              {actionLoadingId === asgn.id ? '...' : '🗑️'}
-                            </button>
-                          ) : (
-                            <button
-                              onClick={() => handleRestore(asgn.id)}
-                              disabled={actionLoadingId === asgn.id}
-                              title="Restore assignment"
-                              style={styles.restoreBtn}
-                            >
-                              {actionLoadingId === asgn.id ? '...' : '♻️ Restore'}
-                            </button>
-                          )}
-                        </div>
-                      </div>
+                {/* Card Header */}
+                <div className="assignment-card__header">
+                  <div className="assignment-card__badges">
+                    <span className="badge badge-indigo">
+                      {asgn.subject}
+                      {asgn.subject_code ? ` • ${asgn.subject_code}` : ""}
+                    </span>
+                    {asgn.department && (
+                      <span className="badge badge-gray">{asgn.department}</span>
+                    )}
+                  </div>
 
-                      {isDeleted && (
-                        <div style={styles.trashBanner}>
-                          ⚠️ Moved to Trash (Submissions Closed)
-                          <div style={{ fontWeight: '700', marginTop: '2px' }}>
-                            ⏳ {getDaysRemaining(asgn.deleted_at)}
-                          </div>
-                        </div>
-                      )}
+                  <div className="assignment-card__actions">
+                    <span className="badge badge-emerald" title="Total student submissions">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                        <polyline points="20 6 9 17 4 12"/>
+                      </svg>
+                      {asgn.submissionCount || 0}
+                    </span>
 
-                      <h3 style={styles.cardTitle}>{asgn.title}</h3>
+                    {!isDeleted ? (
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(asgn.id, asgn.title)}
+                        disabled={actionLoadingId === asgn.id}
+                        title="Move to Trash (Recoverable for 3 days)"
+                        className="btn-icon-danger"
+                      >
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <polyline points="3 6 5 6 21 6"/>
+                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                        </svg>
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => handleRestore(asgn.id)}
+                        disabled={actionLoadingId === asgn.id}
+                        title="Restore assignment"
+                        className="btn btn-success btn--sm"
+                      >
+                        {actionLoadingId === asgn.id ? "…" : "♻️ Restore"}
+                      </button>
+                    )}
+                  </div>
+                </div>
 
-                      <div style={styles.cardMeta}>
-                        <div style={styles.metaRow}>
-                          <span>📝 Max Marks:</span>
-                          <strong>{asgn.max_marks}</strong>
-                        </div>
-                        <div style={styles.metaRow}>
-                          <span>📅 Created:</span>
-                          <span>{new Date(asgn.created_at).toLocaleDateString()}</span>
-                        </div>
-                        {asgn.due_date && (
-                          <div style={styles.metaRow}>
-                            <span>⏰ Due Date:</span>
-                            <span style={{ color: '#dc2626', fontWeight: '600' }}>
-                              {new Date(asgn.due_date).toLocaleString([], {
-                                dateStyle: 'short',
-                                timeStyle: 'short',
-                              })}
-                            </span>
-                          </div>
-                        )}
-                      </div>
+                {/* Trash Banner */}
+                {isDeleted && (
+                  <div className="trash-banner">
+                    <span className="trash-banner__warning">⚠️ In Trash — Submissions Closed</span>
+                    <span className="trash-banner__time">⏳ {getDaysRemaining(asgn.deleted_at)}</span>
+                  </div>
+                )}
 
-                      <div style={styles.cardFooter}>
-                        {!isDeleted ? (
-                          <Link
-                            to={`/assignment/${asgn.id}`}
-                            style={styles.viewBtn}
-                          >
-                            View Submissions & QR Code →
-                          </Link>
-                        ) : (
-                          <div style={{ display: 'flex', gap: '8px' }}>
-                            <button
-                              onClick={() => handleRestore(asgn.id)}
-                              disabled={actionLoadingId === asgn.id}
-                              style={styles.restoreFullBtn}
-                            >
-                              {actionLoadingId === asgn.id
-                                ? 'Restoring...'
-                                : '♻️ Recover Assignment'}
-                            </button>
-                            <Link
-                              to={`/assignment/${asgn.id}`}
-                              style={{ ...styles.viewBtn, flex: 1 }}
-                            >
-                              View Submissions →
-                            </Link>
-                          </div>
-                        )}
-                      </div>
+                {/* Assignment Title */}
+                <h3 className="assignment-card__title" title={asgn.title}>
+                  {asgn.title}
+                </h3>
+
+                {/* Meta details */}
+                <div className="assignment-card__meta">
+                  <div className="meta-pill">
+                    <span className="meta-pill__label">Max Marks</span>
+                    <span className="meta-pill__value">{asgn.max_marks} pts</span>
+                  </div>
+
+                  <div className="meta-pill">
+                    <span className="meta-pill__label">Status</span>
+                    {isDeleted ? (
+                      <span className="status-pill status-pill--danger">Archived</span>
+                    ) : isOverdue ? (
+                      <span className="status-pill status-pill--danger">Closed</span>
+                    ) : (
+                      <span className="status-pill status-pill--success">Open</span>
+                    )}
+                  </div>
+
+                  {asgn.due_date && (
+                    <div className="meta-pill meta-pill--full">
+                      <span className="meta-pill__label">Due</span>
+                      <span className={`meta-pill__value ${isOverdue ? "text-danger" : ""}`}>
+                        {new Date(asgn.due_date).toLocaleString([], {
+                          month: "short",
+                          day: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </span>
                     </div>
-                  );
-                })}
+                  )}
+                </div>
+
+                {/* Card Footer Button */}
+                <div className="assignment-card__footer">
+                  {!isDeleted ? (
+                    <Link
+                      to={`/assignment/${asgn.id}`}
+                      className="btn btn-primary-soft btn--full"
+                    >
+                      <span>View Submissions & QR Code</span>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="5" y1="12" x2="19" y2="12"/>
+                        <polyline points="12 5 19 12 12 19"/>
+                      </svg>
+                    </Link>
+                  ) : (
+                    <div className="card-actions-dual">
+                      <button
+                        type="button"
+                        onClick={() => handleRestore(asgn.id)}
+                        disabled={actionLoadingId === asgn.id}
+                        className="btn btn-success"
+                        style={{ flex: 1 }}
+                      >
+                        {actionLoadingId === asgn.id ? "Restoring..." : "♻️ Restore"}
+                      </button>
+                      <Link
+                        to={`/assignment/${asgn.id}`}
+                        className="btn btn-secondary"
+                        style={{ flex: 1, textAlign: "center" }}
+                      >
+                        View Details
+                      </Link>
+                    </div>
+                  )}
+                </div>
               </div>
             );
-          })()
-        )}
-      </main>
+          })}
+        </div>
+      )}
     </div>
   );
 }
-
-const styles = {
-  container: {
-    minHeight: '100vh',
-    backgroundColor: '#f1f5f9',
-  },
-  navbar: {
-    backgroundColor: '#0f172a',
-    color: '#ffffff',
-    padding: '16px 32px',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-  },
-  navBrand: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '12px',
-  },
-  navLogo: {
-    fontSize: '28px',
-  },
-  navTitle: {
-    fontSize: '18px',
-    fontWeight: '800',
-    letterSpacing: '-0.025em',
-  },
-  navCollege: {
-    fontSize: '12px',
-    color: '#94a3b8',
-  },
-  navUser: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '16px',
-  },
-  userName: {
-    fontSize: '14px',
-    color: '#cbd5e1',
-  },
-  logoutBtn: {
-    padding: '6px 14px',
-    backgroundColor: '#334155',
-    color: '#ffffff',
-    border: 'none',
-    borderRadius: '6px',
-    fontSize: '13px',
-    cursor: 'pointer',
-  },
-  main: {
-    maxWidth: '1200px',
-    margin: '0 auto',
-    padding: '32px 20px',
-  },
-  sectionHeader: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: '28px',
-    flexWrap: 'wrap',
-    gap: '16px',
-  },
-  heading: {
-    fontSize: '26px',
-    fontWeight: '800',
-    color: '#0f172a',
-    margin: '0 0 6px 0',
-  },
-  subheading: {
-    fontSize: '14px',
-    color: '#64748b',
-    margin: 0,
-  },
-  createBtn: {
-    padding: '10px 20px',
-    backgroundColor: '#2563eb',
-    color: '#ffffff',
-    borderRadius: '8px',
-    fontWeight: '600',
-    fontSize: '14px',
-    display: 'inline-block',
-    boxShadow: '0 4px 6px -1px rgba(37, 99, 235, 0.2)',
-  },
-  grid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))',
-    gap: '20px',
-  },
-  card: {
-    backgroundColor: '#ffffff',
-    borderRadius: '12px',
-    padding: '24px',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-    display: 'flex',
-    flexDirection: 'column',
-    justifyContent: 'space-between',
-    border: '1px solid #e2e8f0',
-  },
-  cardHeader: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: '12px',
-    gap: '8px',
-  },
-  subjectBadge: {
-    backgroundColor: '#eff6ff',
-    color: '#1d4ed8',
-    padding: '4px 10px',
-    borderRadius: '16px',
-    fontSize: '12px',
-    fontWeight: '600',
-    marginRight: '6px',
-    display: 'inline-block',
-  },
-  deptBadge: {
-    backgroundColor: '#f8fafc',
-    color: '#475569',
-    border: '1px solid #e2e8f0',
-    padding: '3px 8px',
-    borderRadius: '12px',
-    fontSize: '11px',
-    display: 'inline-block',
-  },
-  countBadge: {
-    backgroundColor: '#f0fdf4',
-    color: '#166534',
-    border: '1px solid #bbf7d0',
-    padding: '4px 10px',
-    borderRadius: '16px',
-    fontSize: '12px',
-    fontWeight: '700',
-    whiteSpace: 'nowrap',
-  },
-  cardTitle: {
-    fontSize: '17px',
-    fontWeight: '700',
-    color: '#1e293b',
-    margin: '0 0 16px 0',
-    lineHeight: '1.4',
-  },
-  cardMeta: {
-    fontSize: '13px',
-    color: '#64748b',
-    borderTop: '1px solid #f1f5f9',
-    paddingTop: '12px',
-    marginBottom: '16px',
-  },
-  metaRow: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    marginBottom: '6px',
-  },
-  cardFooter: {
-    borderTop: '1px solid #f1f5f9',
-    paddingTop: '14px',
-  },
-  viewBtn: {
-    display: 'block',
-    textAlign: 'center',
-    padding: '8px 12px',
-    backgroundColor: '#f8fafc',
-    color: '#2563eb',
-    border: '1px solid #cbd5e1',
-    borderRadius: '6px',
-    fontSize: '13px',
-    fontWeight: '600',
-  },
-  emptyCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: '12px',
-    padding: '60px 24px',
-    textAlign: 'center',
-    border: '2px dashed #cbd5e1',
-  },
-  emptyState: {
-    textAlign: 'center',
-    padding: '40px',
-    color: '#64748b',
-  },
-  error: {
-    backgroundColor: '#fef2f2',
-    color: '#dc2626',
-    padding: '12px',
-    borderRadius: '6px',
-    marginBottom: '20px',
-    fontSize: '13px',
-  },
-  tabRow: {
-    display: 'flex',
-    gap: '12px',
-    marginBottom: '24px',
-    borderBottom: '2px solid #e2e8f0',
-    paddingBottom: '8px',
-  },
-  tabBtn: {
-    padding: '8px 16px',
-    backgroundColor: 'transparent',
-    color: '#64748b',
-    border: 'none',
-    borderBottom: '2px solid transparent',
-    fontSize: '14px',
-    fontWeight: '700',
-    cursor: 'pointer',
-    transition: 'all 0.2s ease',
-  },
-  tabBtnActive: {
-    color: '#2563eb',
-    borderBottom: '2px solid #2563eb',
-  },
-  deleteBtn: {
-    backgroundColor: '#fee2e2',
-    color: '#b91c1c',
-    border: '1px solid #fecaca',
-    borderRadius: '6px',
-    padding: '4px 8px',
-    fontSize: '12px',
-    cursor: 'pointer',
-    lineHeight: '1',
-  },
-  restoreBtn: {
-    backgroundColor: '#dcfce7',
-    color: '#15803d',
-    border: '1px solid #bbf7d0',
-    borderRadius: '6px',
-    padding: '4px 10px',
-    fontSize: '11px',
-    fontWeight: '700',
-    cursor: 'pointer',
-  },
-  restoreFullBtn: {
-    flex: 1,
-    padding: '8px 12px',
-    backgroundColor: '#16a34a',
-    color: '#ffffff',
-    border: 'none',
-    borderRadius: '6px',
-    fontSize: '13px',
-    fontWeight: '700',
-    cursor: 'pointer',
-    textAlign: 'center',
-  },
-  cardDeleted: {
-    backgroundColor: '#fffaf0',
-    border: '1px dashed #f59e0b',
-  },
-  trashBanner: {
-    backgroundColor: '#fef3c7',
-    color: '#92400e',
-    padding: '8px 12px',
-    borderRadius: '6px',
-    fontSize: '12px',
-    marginBottom: '12px',
-    textAlign: 'center',
-  },
-};
 
 export default Dashboard;

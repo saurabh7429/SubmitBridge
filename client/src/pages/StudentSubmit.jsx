@@ -1,21 +1,21 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useParams } from 'react-router-dom';
-import { getAssignmentForStudent, submitAssignment } from '../api';
+import React, { useState, useEffect, useRef } from "react";
+import { useParams } from "react-router-dom";
+import { getAssignmentForStudent, submitAssignment } from "../api";
 
 function StudentSubmit() {
   const { assignmentId } = useParams();
 
   const [assignment, setAssignment] = useState(null);
-  const [studentName, setStudentName] = useState('');
-  const [rollNumber, setRollNumber] = useState('');
+  const [studentName, setStudentName] = useState("");
+  const [rollNumber, setRollNumber] = useState("");
   const [selectedFile, setSelectedFile] = useState(null);
-  const [fileError, setFileError] = useState('');
+  const [fileError, setFileError] = useState("");
   const [isDragging, setIsDragging] = useState(false);
 
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState('');
-  const [successMessage, setSuccessMessage] = useState('');
+  const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
   const [submissionResult, setSubmissionResult] = useState(null);
 
   const fileInputRef = useRef(null);
@@ -28,52 +28,43 @@ function StudentSubmit() {
       } catch (err) {
         setError(
           err.response?.data?.message ||
-            'Assignment not found, moved to trash, or link is invalid.'
+            "Assignment not found, moved to trash, or link is invalid."
         );
       } finally {
         setLoading(false);
       }
     };
-
     fetchAssignment();
   }, [assignmentId]);
 
-  // Validate and store selected file
   const processFile = (file) => {
-    setFileError('');
-
+    setFileError("");
     if (!file) return;
 
-    const allowedTypes = assignment?.allowed_file_types || 'pdf';
-    const isDocxAllowed = allowedTypes.includes('docx');
+    const allowedTypes = assignment?.allowed_file_types || "pdf";
+    const isDocxAllowed = allowedTypes.includes("docx");
 
     const isPdf =
-      file.name.toLowerCase().endsWith('.pdf') ||
-      file.type === 'application/pdf' ||
-      file.type === 'application/x-pdf';
-
+      file.name.toLowerCase().endsWith(".pdf") ||
+      file.type === "application/pdf" ||
+      file.type === "application/x-pdf";
     const isDocx =
-      file.name.toLowerCase().endsWith('.docx') ||
-      file.type.includes('wordprocessingml') ||
-      file.type.includes('msword');
+      file.name.toLowerCase().endsWith(".docx") ||
+      file.type.includes("wordprocessingml") ||
+      file.type.includes("msword");
 
-    if (isPdf) {
-      // PDF is always allowed
-    } else if (isDocx && isDocxAllowed) {
-      // DOCX allowed if enabled by teacher
-    } else {
+    if (!isPdf && !(isDocx && isDocxAllowed)) {
       setFileError(
         isDocxAllowed
-          ? '❌ Only PDF (.pdf) or Word (.docx) files are accepted.'
-          : '❌ Only PDF (.pdf) files are accepted for this assignment.'
+          ? "⚠️ Only PDF (.pdf) or Word (.docx) documents are accepted."
+          : "⚠️ Only PDF (.pdf) documents are accepted for this assignment."
       );
       setSelectedFile(null);
       return;
     }
 
-    // 10MB size limit check
     if (file.size > 10 * 1024 * 1024) {
-      setFileError('❌ File size exceeds 10MB limit. Please upload a smaller file.');
+      setFileError("⚠️ File size exceeds 10MB limit. Please upload a smaller file.");
       setSelectedFile(null);
       return;
     }
@@ -83,9 +74,7 @@ function StudentSubmit() {
 
   const handleFileChange = (e) => {
     const file = e.target.files && e.target.files[0];
-    if (file) {
-      processFile(file);
-    }
+    if (file) processFile(file);
   };
 
   const handleDragOver = (e) => {
@@ -105,108 +94,124 @@ function StudentSubmit() {
     e.stopPropagation();
     setIsDragging(false);
     const file = e.dataTransfer.files && e.dataTransfer.files[0];
-    if (file) {
-      processFile(file);
-    }
+    if (file) processFile(file);
   };
 
   const triggerFileDialog = () => {
     if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+      fileInputRef.current.value = "";
       fileInputRef.current.click();
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
-    setSuccessMessage('');
-
+    setError("");
+    setSuccessMessage("");
     if (!selectedFile) {
-      setFileError('Please select a file before submitting.');
+      setFileError("Please select an assignment document before submitting.");
       return;
     }
-
     setSubmitting(true);
-
     try {
       const formData = new FormData();
-      formData.append('studentName', studentName.trim());
-      formData.append('rollNumber', rollNumber.trim().toUpperCase());
-      formData.append('file', selectedFile);
-
+      formData.append("studentName", studentName.trim());
+      formData.append("rollNumber", rollNumber.trim().toUpperCase());
+      formData.append("file", selectedFile);
       const res = await submitAssignment(assignmentId, formData);
-      setSuccessMessage(res.data.message || 'Submission successful!');
+      setSuccessMessage(res.data.message || "Submission uploaded successfully!");
       setSubmissionResult(res.data.submission || null);
     } catch (err) {
-      setError(err.response?.data?.message || 'Submission failed. Please try again.');
+      setError(
+        err.response?.data?.message || "Submission failed. Please try again."
+      );
     } finally {
       setSubmitting(false);
     }
   };
 
+  /* Loading state */
   if (loading) {
     return (
-      <div style={styles.centerContainer}>
-        <p>Loading assignment submission portal...</p>
-      </div>
-    );
-  }
-
-  if (error && !assignment) {
-    return (
-      <div style={styles.centerContainer}>
-        <div style={styles.errorBox}>
-          <h3>⚠️ Invalid Link</h3>
-          <p>{error}</p>
+      <div className="student-canvas page-enter">
+        <div className="skeleton-card" style={{ maxWidth: 640, margin: "60px auto", height: 320 }}>
+          <div className="skeleton-line skeleton-line--title" />
+          <div className="skeleton-line skeleton-line--text" />
+          <div className="skeleton-line" style={{ height: 120, borderRadius: 12 }} />
         </div>
       </div>
     );
   }
 
-  // Check if submission is closed (if deadline date/time is set and has passed)
+  /* Error state */
+  if (error && !assignment) {
+    return (
+      <div className="student-canvas page-enter">
+        <div className="student-card card-neumorphic" style={{ textAlign: "center", maxWidth: 500, margin: "60px auto", padding: 40 }}>
+          <div style={{ fontSize: 44, marginBottom: 12 }}>🔒</div>
+          <h2 style={{ fontSize: 20, color: "var(--danger)", marginBottom: 8 }}>
+            Submission Portal Unavailable
+          </h2>
+          <p style={{ color: "var(--text-muted)", lineHeight: 1.6 }}>{error}</p>
+        </div>
+      </div>
+    );
+  }
+
   const isLateClosed =
     assignment.due_date && new Date() > new Date(assignment.due_date);
 
   return (
-    <div style={styles.page}>
-      {/* Student Portal Header */}
-      <header style={styles.header}>
-        <div style={styles.headerContent}>
-          <div style={styles.logoBadge}>🎓 SubmitBridge</div>
-          <h1 style={styles.collegeName}>{assignment.college_name}</h1>
-          {assignment.department && (
-            <p style={styles.deptText}>{assignment.department}</p>
-          )}
+    <div className="student-canvas page-enter">
+      {/* ── Top Header ── */}
+      <header className="student-top-banner">
+        <div className="student-banner-inner">
+          <div className="student-logo">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
+              <path d="M6 12v5c3 3 9 3 12 0v-5"/>
+            </svg>
+            <span>SubmitBridge Student Portal</span>
+          </div>
+          <div className="student-institution">
+            <h1>{assignment.college_name}</h1>
+            {assignment.department && <p>{assignment.department}</p>}
+          </div>
         </div>
       </header>
 
-      <main style={styles.main}>
-        {/* Assignment Information Card (Read-Only) */}
-        <div style={styles.infoCard}>
-          <div style={styles.badgeRow}>
-            <span style={styles.subjectBadge}>
-              {assignment.subject} {assignment.subject_code ? `(${assignment.subject_code})` : ''}
+      <main className="student-content-container">
+        {/* ── Assignment Info Overview Card ── */}
+        <div className="student-card card-neumorphic" style={{ marginBottom: 24 }}>
+          <div className="badge-group" style={{ marginBottom: 14 }}>
+            <span className="badge badge-indigo">
+              {assignment.subject}
+              {assignment.subject_code ? ` • ${assignment.subject_code}` : ""}
             </span>
-            <span style={styles.teacherBadge}>
-              Faculty: <strong>{assignment.teacher_name}</strong>
+            <span className="badge badge-gray">
+              Instructor: <strong>{assignment.teacher_name}</strong>
             </span>
+            {isLateClosed && (
+              <span className="badge badge-red">⏰ Deadline Expired</span>
+            )}
           </div>
 
-          <h2 style={styles.assignmentTitle}>{assignment.title}</h2>
+          <h2 className="student-card-title">{assignment.title}</h2>
 
-          <div style={styles.metaRow}>
-            <div>
-              <span style={styles.metaLabel}>Max Marks:</span>{' '}
-              <strong style={{ color: '#0f172a' }}>{assignment.max_marks}</strong>
+          <div className="student-meta-strip">
+            <div className="student-meta-item">
+              <span>Maximum Marks:</span>
+              <strong>{assignment.max_marks} pts</strong>
             </div>
             {assignment.due_date && (
-              <div>
-                <span style={styles.metaLabel}>Due Date:</span>{' '}
-                <strong style={{ color: isLateClosed ? '#dc2626' : '#2563eb' }}>
+              <div className="student-meta-item">
+                <span>Submission Deadline:</span>
+                <strong className={isLateClosed ? "text-danger" : "text-indigo"}>
                   {new Date(assignment.due_date).toLocaleString([], {
-                    dateStyle: 'medium',
-                    timeStyle: 'short',
+                    month: "short",
+                    day: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
                   })}
                 </strong>
               </div>
@@ -214,172 +219,199 @@ function StudentSubmit() {
           </div>
 
           {assignment.instructions && (
-            <div style={styles.instructionsContainer}>
-              <span style={styles.sectionLabel}>📌 Submission Instructions:</span>
-              <p style={styles.instructionsText}>{assignment.instructions}</p>
+            <div className="info-box info-box--neutral">
+              <div className="info-box__title">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <circle cx="12" cy="12" r="10"/>
+                  <line x1="12" y1="16" x2="12" y2="12"/>
+                  <line x1="12" y1="8" x2="12.01" y2="8"/>
+                </svg>
+                <span>Guidelines from Instructor</span>
+              </div>
+              <p className="info-box__content">{assignment.instructions}</p>
             </div>
           )}
 
-          <div style={styles.questionsContainer}>
-            <span style={styles.sectionLabel}>❓ Assignment Questions:</span>
-            <pre style={styles.questionsText}>{assignment.questions}</pre>
+          <div className="info-box info-box--primary" style={{ marginBottom: 0 }}>
+            <div className="info-box__title">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                <line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+              <span>Assignment Questions</span>
+            </div>
+            <p className="info-box__content whitespace-pre-line">{assignment.questions}</p>
           </div>
         </div>
 
-        {/* Submission Confirmation OR Form */}
+        {/* ── Submission Form or Confirmation ── */}
         {successMessage ? (
-          <div style={styles.successCard}>
-            <div style={{ fontSize: '48px', marginBottom: '8px' }}>🎉</div>
-            <h3 style={styles.successHeading}>{successMessage}</h3>
-            <p style={styles.successText}>
-              Your assignment has been securely uploaded to the portal.
+          <div className="student-card card-neumorphic student-success-box">
+            <div className="success-badge">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+            </div>
+
+            <h3 className="success-box-title">{successMessage}</h3>
+            <p className="success-box-desc">
+              Your assignment has been securely uploaded and cataloged under roll number <strong>{rollNumber}</strong>.
             </p>
+
             {submissionResult?.aiDetectionScore !== null &&
               submissionResult?.aiDetectionScore !== undefined &&
               submissionResult.aiDetectionScore > 50 && (
-                <div style={styles.aiWarningCard}>
-                  <h4 style={{ margin: '0 0 6px 0', color: '#991b1b', fontSize: '14px' }}>
-                    ⚠️ Originality Advisory: {submissionResult.aiDetectionScore}% AI Likelihood Detected
-                  </h4>
-                  <p style={{ margin: 0, fontSize: '13px', color: '#7f1d1d', lineHeight: '1.4' }}>
-                    Our preliminary screening flagged high probability of AI-generated content. If you used AI drafting tools, consider reviewing your answers in your own words and resubmitting before the due date.
-                  </p>
+                <div className="alert alert-error" style={{ textAlign: "left", marginTop: 20 }}>
+                  <div>
+                    <strong>⚠️ AI Similarity Warning ({submissionResult.aiDetectionScore}% AI Likelihood)</strong>
+                    <p style={{ margin: "4px 0 0", fontSize: 13, lineHeight: 1.5 }}>
+                      Automated screening flagged significant AI similarity. You can refine your submission in your own words and re-upload before the deadline.
+                    </p>
+                  </div>
                 </div>
               )}
 
-            <div style={styles.resubmitNotice}>
-              <p style={{ margin: 0, fontSize: '13px', color: '#166534' }}>
-                💡 <strong>Need to make changes?</strong> You can resubmit anytime before the deadline. Submitting again with the same Roll Number will automatically overwrite your previous file.
-              </p>
+            <div className="alert alert-info" style={{ textAlign: "left", marginTop: 16 }}>
+              💡 <strong>Need to update or re-upload?</strong> You can resubmit anytime before the deadline. Submitting again with the same Roll Number will replace your prior submission.
             </div>
-            <button
-              onClick={() => {
-                setSuccessMessage('');
-                setSubmissionResult(null);
-                setSelectedFile(null);
-              }}
-              style={styles.resubmitBtn}
-            >
-              Submit Another / Update Submission
-            </button>
+
+            <div style={{ marginTop: 24 }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setSuccessMessage("");
+                  setSubmissionResult(null);
+                  setSelectedFile(null);
+                }}
+                className="btn btn-secondary"
+              >
+                Submit Again / Replace File
+              </button>
+            </div>
           </div>
         ) : isLateClosed ? (
-          <div style={styles.closedCard}>
-            <h3 style={{ color: '#dc2626', margin: '0 0 8px 0' }}>
-              ⛔ Submissions Closed
+          <div className="student-card card-neumorphic" style={{ textAlign: "center", padding: 40 }}>
+            <div style={{ fontSize: 44, marginBottom: 12 }}>⏰</div>
+            <h3 style={{ color: "var(--danger)", fontSize: 20, marginBottom: 8 }}>
+              Submissions Closed
             </h3>
-            <p style={{ color: '#475569', margin: 0 }}>
-              The deadline for this assignment has passed, and late submissions are not allowed by the faculty.
+            <p style={{ color: "var(--text-muted)", maxWidth: 440, margin: "0 auto" }}>
+              The deadline for this assignment has expired. New submissions are no longer accepted.
             </p>
           </div>
         ) : (
           /* Submission Form */
-          <div style={styles.formCard}>
-            <h3 style={styles.formHeading}>Upload Your Submission</h3>
+          <div className="student-card card-neumorphic">
+            <h3 className="form-section-title">Submit Your Work</h3>
+            <p className="form-section-subtitle">
+              Enter your student details and upload your assignment file.
+            </p>
 
-            {error && <div style={styles.formError}>{error}</div>}
+            {error && <div className="alert alert-error">{error}</div>}
 
-            <form onSubmit={handleSubmit}>
-              <div style={styles.formField}>
-                <label style={styles.fieldLabel}>Student Full Name *</label>
-                <input
-                  type="text"
-                  value={studentName}
-                  onChange={(e) => setStudentName(e.target.value)}
-                  required
-                  placeholder="e.g. Aryan Sharma"
-                  style={styles.formInput}
-                />
+            <form onSubmit={handleSubmit} className="student-form">
+              <div className="form-row form-row--2col">
+                <div className="form-group">
+                  <label className="form-label">
+                    Full Name <span className="text-danger">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={studentName}
+                    onChange={(e) => setStudentName(e.target.value)}
+                    required
+                    placeholder="e.g. Aryan Sharma"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">
+                    Roll Number / Student ID <span className="text-danger">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={rollNumber}
+                    onChange={(e) => setRollNumber(e.target.value)}
+                    required
+                    placeholder="e.g. 21CS042"
+                  />
+                  <span className="field-hint">
+                    Used to identify and update your submission if you re-upload.
+                  </span>
+                </div>
               </div>
 
-              <div style={styles.formField}>
-                <label style={styles.fieldLabel}>Roll Number / Student ID *</label>
-                <input
-                  type="text"
-                  value={rollNumber}
-                  onChange={(e) => setRollNumber(e.target.value)}
-                  required
-                  placeholder="e.g. 21CS042"
-                  style={styles.formInput}
-                />
-                <span style={styles.fieldHint}>
-                  Used to link and overwrite your submission if you re-upload.
-                </span>
-              </div>
+              {/* Upload Drop Zone */}
+              <div className="form-group">
+                <label className="form-label">
+                  Upload Assignment File <span className="text-danger">*</span>
+                </label>
 
-              <div style={styles.formField}>
-                <label style={styles.fieldLabel}>Upload Assignment File *</label>
-
-                {/* Hidden File Input */}
                 <input
                   ref={fileInputRef}
                   type="file"
                   accept={
-                    assignment.allowed_file_types?.includes('docx')
-                      ? '.pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-                      : '.pdf,application/pdf'
+                    assignment.allowed_file_types?.includes("docx")
+                      ? ".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                      : ".pdf,application/pdf"
                   }
                   onChange={handleFileChange}
-                  style={{ display: 'none' }}
+                  style={{ display: "none" }}
                 />
 
-                {/* Interactive Click / Drop Zone */}
                 <div
                   onClick={triggerFileDialog}
                   onDragOver={handleDragOver}
                   onDragLeave={handleDragLeave}
                   onDrop={handleDrop}
-                  style={{
-                    ...styles.dropZone,
-                    borderColor: isDragging
-                      ? '#2563eb'
-                      : selectedFile
-                      ? '#16a34a'
-                      : '#cbd5e1',
-                    backgroundColor: isDragging
-                      ? '#eff6ff'
-                      : selectedFile
-                      ? '#f0fdf4'
-                      : '#f8fafc',
-                  }}
+                  className={`drop-zone ${isDragging ? "drop-zone--dragging" : ""} ${
+                    selectedFile ? "drop-zone--selected" : ""
+                  }`}
                 >
                   {selectedFile ? (
-                    <div>
-                      <p style={styles.selectedFileTitle}>
-                        📄 <strong>{selectedFile.name}</strong> ({(selectedFile.size / 1024).toFixed(1)} KB)
-                      </p>
-                      <span style={styles.readyBadge}>
-                        ✅ File ready for upload
-                      </span>
-                      <p style={styles.changeHint}>
-                        Click here to change or replace file
-                      </p>
+                    <div className="drop-zone__file-info">
+                      <div className="file-icon-badge">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
+                          <polyline points="14 2 14 8 20 8"/>
+                        </svg>
+                      </div>
+                      <div className="file-name-text">
+                        <strong>{selectedFile.name}</strong>
+                        <span>({(selectedFile.size / 1024).toFixed(1)} KB)</span>
+                      </div>
+                      <span className="badge badge-emerald">✓ File Attached & Ready</span>
+                      <p className="file-change-hint">Click or drop another file to replace</p>
                     </div>
                   ) : (
-                    <div>
-                      <div style={{ fontSize: '32px', marginBottom: '8px' }}>📁</div>
-                      <p style={{ fontWeight: '700', color: '#1e293b', margin: '0 0 4px 0' }}>
-                        Click to choose your assignment file
-                      </p>
-                      <p style={{ fontSize: '12px', color: '#64748b', margin: 0 }}>
-                        or drag and drop here (PDF {assignment.allowed_file_types?.includes('docx') ? 'or DOCX' : ''}, Max 10MB)
+                    <div className="drop-zone__prompt">
+                      <div className="upload-icon-circle">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                          <polyline points="17 8 12 3 7 8"/>
+                          <line x1="12" y1="3" x2="12" y2="15"/>
+                        </svg>
+                      </div>
+                      <p className="drop-prompt-title">Click to browse or drag and drop file here</p>
+                      <p className="drop-prompt-sub">
+                        Accepted: PDF{assignment.allowed_file_types?.includes("docx") ? " or Word (DOCX)" : ""} (Max 10MB)
                       </p>
                     </div>
                   )}
                 </div>
 
-                {fileError && <p style={styles.fileError}>{fileError}</p>}
+                {fileError && <p className="file-error-text">{fileError}</p>}
               </div>
 
               <button
                 type="submit"
                 disabled={submitting}
-                style={{
-                  ...styles.submitBtn,
-                  backgroundColor: submitting ? '#94a3b8' : '#2563eb',
-                }}
+                className="btn btn-primary btn-glow btn--full btn--lg"
+                style={{ marginTop: 12 }}
               >
-                {submitting ? 'Uploading & Evaluating...' : '📤 Submit Assignment'}
+                {submitting ? "Uploading & Analyzing..." : "Submit Assignment Now →"}
               </button>
             </form>
           </div>
@@ -389,291 +421,4 @@ function StudentSubmit() {
   );
 }
 
-const styles = {
-  page: {
-    minHeight: '100vh',
-    backgroundColor: '#f1f5f9',
-  },
-  header: {
-    backgroundColor: '#0f172a',
-    color: '#ffffff',
-    padding: '28px 20px',
-    textAlign: 'center',
-    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-  },
-  headerContent: {
-    maxWidth: '800px',
-    margin: '0 auto',
-  },
-  logoBadge: {
-    display: 'inline-block',
-    fontSize: '12px',
-    fontWeight: '700',
-    backgroundColor: '#334155',
-    color: '#93c5fd',
-    padding: '4px 12px',
-    borderRadius: '16px',
-    marginBottom: '8px',
-    letterSpacing: '0.05em',
-  },
-  collegeName: {
-    fontSize: '22px',
-    fontWeight: '800',
-    margin: '0 0 4px 0',
-  },
-  deptText: {
-    fontSize: '13px',
-    color: '#94a3b8',
-    margin: 0,
-  },
-  main: {
-    maxWidth: '760px',
-    margin: '28px auto',
-    padding: '0 20px 60px 20px',
-  },
-  centerContainer: {
-    minHeight: '80vh',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    color: '#64748b',
-    padding: '20px',
-  },
-  errorBox: {
-    backgroundColor: '#ffffff',
-    padding: '32px',
-    borderRadius: '12px',
-    textAlign: 'center',
-    border: '1px solid #e2e8f0',
-  },
-  infoCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: '12px',
-    padding: '28px',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-    border: '1px solid #e2e8f0',
-    marginBottom: '24px',
-  },
-  badgeRow: {
-    display: 'flex',
-    gap: '8px',
-    marginBottom: '12px',
-    flexWrap: 'wrap',
-  },
-  subjectBadge: {
-    backgroundColor: '#eff6ff',
-    color: '#1d4ed8',
-    padding: '4px 10px',
-    borderRadius: '16px',
-    fontSize: '12px',
-    fontWeight: '700',
-  },
-  teacherBadge: {
-    backgroundColor: '#f8fafc',
-    color: '#475569',
-    border: '1px solid #e2e8f0',
-    padding: '3px 8px',
-    borderRadius: '12px',
-    fontSize: '11px',
-  },
-  assignmentTitle: {
-    fontSize: '20px',
-    fontWeight: '800',
-    color: '#0f172a',
-    margin: '0 0 16px 0',
-  },
-  metaRow: {
-    display: 'flex',
-    gap: '24px',
-    fontSize: '13px',
-    color: '#475569',
-    marginBottom: '16px',
-    paddingBottom: '12px',
-    borderBottom: '1px solid #f1f5f9',
-  },
-  metaLabel: {
-    color: '#64748b',
-  },
-  sectionLabel: {
-    display: 'block',
-    fontSize: '12px',
-    fontWeight: '700',
-    color: '#334155',
-    marginBottom: '4px',
-  },
-  instructionsContainer: {
-    backgroundColor: '#f8fafc',
-    border: '1px solid #e2e8f0',
-    borderRadius: '6px',
-    padding: '12px',
-    marginBottom: '14px',
-  },
-  instructionsText: {
-    margin: 0,
-    fontSize: '13px',
-    color: '#334155',
-    lineHeight: '1.4',
-  },
-  questionsContainer: {
-    backgroundColor: '#ffffff',
-    border: '1px solid #cbd5e1',
-    borderRadius: '6px',
-    padding: '12px',
-  },
-  questionsText: {
-    margin: 0,
-    fontSize: '13px',
-    color: '#1e293b',
-    whiteSpace: 'pre-wrap',
-    fontFamily: 'inherit',
-    lineHeight: '1.5',
-  },
-  formCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: '12px',
-    padding: '28px',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-    border: '1px solid #e2e8f0',
-  },
-  formHeading: {
-    fontSize: '18px',
-    fontWeight: '700',
-    color: '#0f172a',
-    margin: '0 0 20px 0',
-    borderBottom: '1px solid #f1f5f9',
-    paddingBottom: '10px',
-  },
-  formField: {
-    marginBottom: '18px',
-  },
-  fieldLabel: {
-    display: 'block',
-    fontSize: '13px',
-    fontWeight: '600',
-    color: '#334155',
-    marginBottom: '6px',
-  },
-  formInput: {
-    width: '100%',
-    padding: '10px 12px',
-    border: '1px solid #cbd5e1',
-    borderRadius: '6px',
-    fontSize: '14px',
-    outline: 'none',
-    boxSizing: 'border-box',
-  },
-  fieldHint: {
-    display: 'block',
-    fontSize: '11px',
-    color: '#94a3b8',
-    marginTop: '4px',
-  },
-  dropZone: {
-    border: '2px dashed #cbd5e1',
-    borderRadius: '8px',
-    padding: '24px 16px',
-    textAlign: 'center',
-    cursor: 'pointer',
-    transition: 'all 0.2s ease',
-  },
-  selectedFileTitle: {
-    margin: '0 0 6px 0',
-    fontSize: '14px',
-    color: '#15803d',
-  },
-  readyBadge: {
-    display: 'inline-block',
-    backgroundColor: '#16a34a',
-    color: '#ffffff',
-    fontSize: '11px',
-    fontWeight: '700',
-    padding: '3px 8px',
-    borderRadius: '4px',
-  },
-  changeHint: {
-    fontSize: '11px',
-    color: '#64748b',
-    margin: '6px 0 0 0',
-  },
-  fileError: {
-    color: '#dc2626',
-    fontSize: '12px',
-    marginTop: '6px',
-    fontWeight: '600',
-  },
-  submitBtn: {
-    width: '100%',
-    padding: '14px',
-    color: '#ffffff',
-    border: 'none',
-    borderRadius: '8px',
-    fontSize: '15px',
-    fontWeight: '700',
-    cursor: 'pointer',
-    boxShadow: '0 4px 6px -1px rgba(37, 99, 235, 0.2)',
-    marginTop: '8px',
-  },
-  formError: {
-    backgroundColor: '#fef2f2',
-    color: '#dc2626',
-    padding: '10px 12px',
-    borderRadius: '6px',
-    fontSize: '13px',
-    marginBottom: '16px',
-  },
-  successCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: '12px',
-    padding: '36px 24px',
-    textAlign: 'center',
-    border: '1px solid #bbf7d0',
-    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
-  },
-  successHeading: {
-    fontSize: '20px',
-    fontWeight: '800',
-    color: '#166534',
-    margin: '0 0 8px 0',
-  },
-  successText: {
-    fontSize: '14px',
-    color: '#475569',
-    margin: '0 0 16px 0',
-  },
-  aiWarningCard: {
-    backgroundColor: '#fef2f2',
-    border: '1px solid #fecaca',
-    borderRadius: '8px',
-    padding: '14px',
-    textAlign: 'left',
-    marginBottom: '16px',
-  },
-  resubmitNotice: {
-    backgroundColor: '#f0fdf4',
-    border: '1px solid #bbf7d0',
-    borderRadius: '8px',
-    padding: '14px',
-    textAlign: 'left',
-    marginBottom: '20px',
-  },
-  resubmitBtn: {
-    padding: '10px 20px',
-    backgroundColor: '#f1f5f9',
-    color: '#334155',
-    border: '1px solid #cbd5e1',
-    borderRadius: '6px',
-    fontSize: '13px',
-    fontWeight: '600',
-    cursor: 'pointer',
-  },
-  closedCard: {
-    backgroundColor: '#fef2f2',
-    border: '1px solid #fecaca',
-    borderRadius: '12px',
-    padding: '24px',
-    textAlign: 'center',
-  },
-};
-
 export default StudentSubmit;
-

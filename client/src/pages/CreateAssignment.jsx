@@ -1,53 +1,51 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { createAssignment } from '../api';
+import React, { useState, useEffect } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import { createAssignment } from "../api";
+import { useAuth } from "../context/AuthContext";
+import { useAssignments } from "../context/AssignmentsContext";
 
 function CreateAssignment() {
   const navigate = useNavigate();
-  const [teacher, setTeacher] = useState(null);
+  const { teacher } = useAuth();
+  const { refreshAssignments } = useAssignments();
 
-  // Form fields as defined in PRD Table 2
-  const [collegeName, setCollegeName] = useState('');
-  const [department, setDepartment] = useState('');
-  const [subject, setSubject] = useState('');
-  const [subjectCode, setSubjectCode] = useState('');
-  const [title, setTitle] = useState('');
-  const [instructions, setInstructions] = useState('');
-  const [questions, setQuestions] = useState('');
+  // Form fields
+  const [collegeName, setCollegeName] = useState("");
+  const [department, setDepartment] = useState("");
+  const [subject, setSubject] = useState("");
+  const [subjectCode, setSubjectCode] = useState("");
+  const [title, setTitle] = useState("");
+  const [instructions, setInstructions] = useState("");
+  const [questions, setQuestions] = useState("");
   const [maxMarks, setMaxMarks] = useState(100);
-  const [dueDate, setDueDate] = useState('');
+  const [dueDate, setDueDate] = useState("");
   const [allowPdf, setAllowPdf] = useState(true);
   const [allowDocx, setAllowDocx] = useState(false);
 
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [createdResult, setCreatedResult] = useState(null);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    const storedTeacher = localStorage.getItem('teacher');
-    if (storedTeacher) {
-      const parsed = JSON.parse(storedTeacher);
-      setTeacher(parsed);
-      setCollegeName(parsed.collegeName || '');
+    if (teacher?.collegeName) {
+      setCollegeName(teacher.collegeName);
     }
-  }, []);
+  }, [teacher]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
+    setError("");
 
-    // Prepare allowed file types string
     const types = [];
-    if (allowPdf) types.push('pdf');
-    if (allowDocx) types.push('docx');
+    if (allowPdf) types.push("pdf");
+    if (allowDocx) types.push("docx");
     if (types.length === 0) {
-      setError('Please allow at least one file type (PDF or DOCX).');
+      setError("Please select at least one accepted file format (PDF or DOCX).");
       return;
     }
 
     setLoading(true);
-
     try {
       const payload = {
         collegeName,
@@ -59,550 +57,343 @@ function CreateAssignment() {
         questions,
         maxMarks: Number(maxMarks),
         dueDate: dueDate ? new Date(dueDate).toISOString() : null,
-        allowLateSubmission: false, // Strict: once due date passes, submissions close
-        allowedFileTypes: types.join(','),
+        allowLateSubmission: false,
+        allowedFileTypes: types.join(","),
       };
-
       const res = await createAssignment(payload);
       setCreatedResult(res.data);
+      // Silently refresh assignments in cache
+      refreshAssignments(true).catch(() => {});
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to create assignment.');
+      setError(err.response?.data?.message || "Failed to create assignment.");
     } finally {
       setLoading(false);
     }
   };
 
   const handleCopyLink = () => {
-    if (createdResult?.shareableLink) {
-      navigator.clipboard.writeText(createdResult.shareableLink);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2500);
+    const link =
+      createdResult?.shareableLink ||
+      `${window.location.origin}/submit/${createdResult?.assignment?.id}`;
+
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard
+        .writeText(link)
+        .then(() => {
+          setCopied(true);
+          setTimeout(() => setCopied(false), 2200);
+        })
+        .catch(() => fallbackCopy(link));
+    } else {
+      fallbackCopy(link);
     }
   };
 
+  const fallbackCopy = (text) => {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.left = "-999999px";
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    try {
+      document.execCommand("copy");
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2200);
+    } catch (e) {
+      console.error("Fallback copy failed", e);
+    }
+    document.body.removeChild(ta);
+  };
+
   return (
-    <div style={styles.container}>
-      {/* Top Bar */}
-      <header style={styles.navbar}>
-        <div style={styles.navBrand}>
-          <Link to="/dashboard" style={styles.backBtn}>
-            ← Dashboard
-          </Link>
-          <span style={styles.navTitle}>SubmitBridge</span>
-        </div>
-      </header>
+    <div className="page-container page-enter">
+      {/* Back button */}
+      <div className="detail-top-bar">
+        <Link to="/dashboard" className="btn-back-pill">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="19" y1="12" x2="5" y2="12"/>
+            <polyline points="12 19 5 12 12 5"/>
+          </svg>
+          <span>Back to Dashboard</span>
+        </Link>
+      </div>
 
-      <main style={styles.main}>
-        {createdResult ? (
-          /* Assignment Created Success View with QR Code & Link */
-          <div style={styles.successCard}>
-            <div style={styles.successHeader}>
-              <div style={{ fontSize: '48px', marginBottom: '8px' }}>🎉</div>
-              <h2 style={styles.successTitle}>Assignment Created Successfully!</h2>
-              <p style={styles.successSubtitle}>
-                Share this permanent submission link or QR code with your students.
-              </p>
-            </div>
-
-            <div style={styles.detailsPreview}>
-              <h3 style={{ margin: '0 0 6px 0', color: '#1e293b' }}>
-                {createdResult.assignment.title}
-              </h3>
-              <p style={{ margin: '0 0 4px 0', color: '#475569', fontSize: '14px' }}>
-                <strong>Subject:</strong> {createdResult.assignment.subject}
-                {createdResult.assignment.subject_code ? ` (${createdResult.assignment.subject_code})` : ''}
-              </p>
-              <p style={{ margin: 0, color: '#64748b', fontSize: '13px' }}>
-                <strong>Institute:</strong> {createdResult.assignment.college_name} |{' '}
-                <strong>Max Marks:</strong> {createdResult.assignment.max_marks}
-              </p>
-            </div>
-
-            {/* Shareable Link Box */}
-            <div style={styles.linkBox}>
-              <label style={styles.linkLabel}>📎 Student Submission Link (Public):</label>
-              <div style={styles.linkRow}>
-                <input
-                  type="text"
-                  readOnly
-                  value={createdResult.shareableLink}
-                  style={styles.linkInput}
-                />
-                <button onClick={handleCopyLink} style={styles.copyBtn}>
-                  {copied ? '✅ Copied!' : '📋 Copy Link'}
-                </button>
+      {!createdResult ? (
+        <div className="create-container">
+          <div className="create-card card-neumorphic">
+            <div className="create-card__header">
+              <div className="create-card__icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 20h9"/>
+                  <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                </svg>
               </div>
-            </div>
-
-            {/* QR Code Container */}
-            <div style={styles.qrContainer}>
-              <p style={styles.qrLabel}>📱 Scan QR Code to Submit on Mobile:</p>
-              <img
-                src={createdResult.qrCode}
-                alt="Submission QR Code"
-                style={styles.qrImage}
-              />
               <div>
-                <a
-                  href={createdResult.qrCode}
-                  download={`QR-${createdResult.assignment.subject}.png`}
-                  style={styles.downloadQrBtn}
-                >
-                  ⬇️ Download QR Image
-                </a>
+                <h1 className="create-card__title">Create New Assignment</h1>
+                <p className="create-card__subtitle">
+                  Define questions, constraints, and due dates. An instant submission QR code will be generated.
+                </p>
               </div>
             </div>
 
-            <div style={styles.actionButtons}>
-              <button
-                onClick={() => {
-                  setCreatedResult(null);
-                  setTitle('');
-                  setQuestions('');
-                  setInstructions('');
-                }}
-                style={styles.createAnotherBtn}
-              >
-                + Create Another Assignment
-              </button>
+            {error && <div className="alert alert-error">{error}</div>}
 
-              <Link
-                to={`/assignment/${createdResult.assignment.id}`}
-                style={styles.viewDetailBtn}
-              >
-                View Submissions Dashboard →
-              </Link>
-            </div>
-          </div>
-        ) : (
-          /* Assignment Creation Form (PRD Table 2) */
-          <div style={styles.formCard}>
-            <div style={styles.formHeader}>
-              <h1 style={styles.heading}>Create New Assignment</h1>
-              <p style={styles.subheading}>
-                Provide full context so the generated student submission portal is self-explanatory.
-              </p>
-            </div>
-
-            {error && <div style={styles.error}>{error}</div>}
-
-            <form onSubmit={handleSubmit}>
-              {/* Row 1: Institute & Department */}
-              <div style={styles.row}>
-                <div style={styles.col}>
-                  <label style={styles.label}>College / Institute Name *</label>
+            <form onSubmit={handleSubmit} className="form-grid">
+              {/* College & Department */}
+              <div className="form-row form-row--2col">
+                <div className="form-group">
+                  <label className="form-label">
+                    Institution / College Name <span className="text-danger">*</span>
+                  </label>
                   <input
                     type="text"
+                    className="form-input"
                     value={collegeName}
                     onChange={(e) => setCollegeName(e.target.value)}
                     required
-                    placeholder="e.g. National Institute of Technology"
-                    style={styles.input}
+                    placeholder="e.g. Udhna Citizen College"
                   />
                 </div>
-                <div style={styles.col}>
-                  <label style={styles.label}>Department / Program (Optional)</label>
+
+                <div className="form-group">
+                  <label className="form-label">Department / Stream (Optional)</label>
                   <input
                     type="text"
+                    className="form-input"
                     value={department}
                     onChange={(e) => setDepartment(e.target.value)}
                     placeholder="e.g. Computer Science & Engineering"
-                    style={styles.input}
                   />
                 </div>
               </div>
 
-              {/* Row 2: Subject & Subject Code */}
-              <div style={styles.row}>
-                <div style={styles.col}>
-                  <label style={styles.label}>Subject Name *</label>
+              {/* Subject & Code */}
+              <div className="form-row form-row--2col">
+                <div className="form-group">
+                  <label className="form-label">
+                    Subject Name <span className="text-danger">*</span>
+                  </label>
                   <input
                     type="text"
+                    className="form-input"
                     value={subject}
                     onChange={(e) => setSubject(e.target.value)}
                     required
                     placeholder="e.g. Operating Systems"
-                    style={styles.input}
                   />
                 </div>
-                <div style={styles.col}>
-                  <label style={styles.label}>Subject Code (Optional)</label>
+
+                <div className="form-group">
+                  <label className="form-label">Subject Code (Optional)</label>
                   <input
                     type="text"
+                    className="form-input"
                     value={subjectCode}
                     onChange={(e) => setSubjectCode(e.target.value)}
-                    placeholder="e.g. CS402"
-                    style={styles.input}
+                    placeholder="e.g. CS-402"
                   />
                 </div>
               </div>
 
-              {/* Row 3: Assignment Title */}
-              <div style={styles.field}>
-                <label style={styles.label}>Assignment Title *</label>
+              {/* Assignment Title */}
+              <div className="form-group">
+                <label className="form-label">
+                  Assignment Title <span className="text-danger">*</span>
+                </label>
                 <input
                   type="text"
+                  className="form-input"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   required
-                  placeholder="e.g. Assignment 2 — CPU Scheduling & Semaphores"
-                  style={styles.input}
+                  placeholder="e.g. Assignment 2 — CPU Scheduling & Process Synchronization"
                 />
               </div>
 
-              {/* Row 4: Instructions */}
-              <div style={styles.field}>
-                <label style={styles.label}>
+              {/* Submission Instructions */}
+              <div className="form-group">
+                <label className="form-label">
                   Submission Instructions & Guidelines (Optional)
                 </label>
                 <textarea
+                  className="form-textarea"
                   rows={3}
                   value={instructions}
                   onChange={(e) => setInstructions(e.target.value)}
-                  placeholder="e.g. Include diagrams for Gantt charts. Maintain academic integrity. Late submissions will receive a 10% penalty."
-                  style={styles.textarea}
+                  placeholder="e.g. Provide step-by-step Gantt charts. Maintain academic integrity. Hand-written or typed accepted."
                 />
               </div>
 
-              {/* Row 5: Questions */}
-              <div style={styles.field}>
-                <label style={styles.label}>
-                  Assignment Questions / Problem Statements *
+              {/* Questions / Problem Statements */}
+              <div className="form-group">
+                <label className="form-label">
+                  Assignment Questions / Problem Statements <span className="text-danger">*</span>
                 </label>
                 <textarea
-                  rows={6}
+                  className="form-textarea"
+                  rows={5}
                   value={questions}
                   onChange={(e) => setQuestions(e.target.value)}
                   required
-                  placeholder="1. Compare preemptive and non-preemptive scheduling algorithms.&#10;2. Solve the following Round Robin scheduling problem with quantum = 2ms..."
-                  style={styles.textarea}
+                  placeholder="1. Compare Preemptive and Non-Preemptive scheduling algorithms.&#10;2. Solve the following Round Robin problem with Quantum = 2ms..."
                 />
               </div>
 
-              {/* Row 6: Max Marks & Due Date */}
-              <div style={styles.row}>
-                <div style={styles.col}>
-                  <label style={styles.label}>Maximum Marks *</label>
+              {/* Marks & Due Date */}
+              <div className="form-row form-row--2col">
+                <div className="form-group">
+                  <label className="form-label">
+                    Maximum Marks <span className="text-danger">*</span>
+                  </label>
                   <input
                     type="number"
+                    min={1}
+                    max={1000}
+                    className="form-input"
                     value={maxMarks}
                     onChange={(e) => setMaxMarks(e.target.value)}
                     required
-                    min={1}
-                    max={1000}
-                    style={styles.input}
                   />
                 </div>
-                <div style={styles.col}>
-                  <label style={styles.label}>
-                    Due Date & Time {!allowLateSubmission ? '*' : '(Optional)'}
-                  </label>
+
+                <div className="form-group">
+                  <label className="form-label">Due Date & Time (Optional)</label>
                   <input
                     type="datetime-local"
+                    className="form-input"
                     value={dueDate}
                     onChange={(e) => setDueDate(e.target.value)}
-                    style={styles.input}
                   />
-                  <span style={{ fontSize: '11px', color: '#64748b', marginTop: '4px', display: 'block' }}>
-                    💡 Agar deadline set ki gayi hai, to date & time cross hote hi submissions automatically band ho jayenge.
+                  <span className="field-hint">
+                    🔒 Submissions automatically close once deadline expires.
                   </span>
                 </div>
               </div>
 
-              {/* Row 7: Allowed File Types */}
-              <div style={styles.field}>
-                <label style={styles.label}>Allowed File Formats</label>
-                <div style={styles.checkboxGroup}>
-                  <label style={styles.checkboxLabel}>
+              {/* Accepted Formats */}
+              <div className="form-group">
+                <label className="form-label">Accepted Document Formats</label>
+                <div className="format-selection-row">
+                  <label className={`format-pill-box ${allowPdf ? "active" : ""}`}>
                     <input
                       type="checkbox"
                       checked={allowPdf}
                       onChange={(e) => setAllowPdf(e.target.checked)}
                     />
-                    <span>PDF Document (.pdf)</span>
+                    <span className="format-pill-box__icon">📄</span>
+                    <div>
+                      <strong>PDF Document (.pdf)</strong>
+                      <p>Standard document format for all devices</p>
+                    </div>
                   </label>
-                  <label style={styles.checkboxLabel}>
+
+                  <label className={`format-pill-box ${allowDocx ? "active" : ""}`}>
                     <input
                       type="checkbox"
                       checked={allowDocx}
                       onChange={(e) => setAllowDocx(e.target.checked)}
                     />
-                    <span>Word Document (.docx)</span>
+                    <span className="format-pill-box__icon">📝</span>
+                    <div>
+                      <strong>Word Document (.docx)</strong>
+                      <p>Microsoft Word document format</p>
+                    </div>
                   </label>
                 </div>
               </div>
 
-              <div style={styles.formFooter}>
-                <button type="submit" disabled={loading} style={styles.submitBtn}>
-                  {loading ? 'Creating Assignment...' : '🚀 Create Assignment & Generate QR'}
+              <div className="form-submit-row">
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="btn btn-primary btn-glow btn--lg"
+                >
+                  {loading ? (
+                    <span>Generating Portal & QR...</span>
+                  ) : (
+                    <>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="20 6 9 17 4 12"/>
+                      </svg>
+                      <span>Create Assignment & Generate QR</span>
+                    </>
+                  )}
                 </button>
               </div>
             </form>
           </div>
-        )}
-      </main>
+        </div>
+      ) : (
+        /* Success Screen with generated QR and link */
+        <div className="create-success-container">
+          <div className="card-neumorphic success-card">
+            <div className="success-badge">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+            </div>
+
+            <h2 className="success-card__title">Assignment Created Successfully!</h2>
+            <p className="success-card__desc">
+              Your submission portal is ready. Share the QR code or link with your students.
+            </p>
+
+            <div className="success-qr-frame">
+              {createdResult.qrCode ? (
+                <img
+                  src={createdResult.qrCode}
+                  alt="Student QR Code"
+                  className="success-qr-img"
+                />
+              ) : null}
+            </div>
+
+            <div className="share-link-box">
+              <input
+                type="text"
+                readOnly
+                value={
+                  createdResult.shareableLink ||
+                  `${window.location.origin}/submit/${createdResult.assignment?.id}`
+                }
+                className="share-link-input"
+              />
+              <button
+                type="button"
+                onClick={handleCopyLink}
+                className={`btn btn-copy-link ${copied ? "btn-copy-link--copied" : ""}`}
+              >
+                {copied ? "✓ Copied!" : "Copy Link"}
+              </button>
+            </div>
+
+            <div className="success-action-btns">
+              <Link
+                to={`/assignment/${createdResult.assignment?.id}`}
+                className="btn btn-primary btn--lg"
+              >
+                Go to Assignment Submissions →
+              </Link>
+              <button
+                type="button"
+                onClick={() => {
+                  setCreatedResult(null);
+                  setTitle("");
+                  setInstructions("");
+                  setQuestions("");
+                }}
+                className="btn btn-secondary"
+              >
+                + Create Another Assignment
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-const styles = {
-  container: {
-    minHeight: '100vh',
-    backgroundColor: '#f1f5f9',
-  },
-  navbar: {
-    backgroundColor: '#0f172a',
-    color: '#ffffff',
-    padding: '14px 32px',
-  },
-  navBrand: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '16px',
-  },
-  backBtn: {
-    color: '#94a3b8',
-    fontSize: '13px',
-    fontWeight: '600',
-  },
-  navTitle: {
-    fontSize: '17px',
-    fontWeight: '800',
-  },
-  main: {
-    maxWidth: '840px',
-    margin: '32px auto',
-    padding: '0 20px 40px 20px',
-  },
-  formCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: '12px',
-    padding: '36px',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-    border: '1px solid #e2e8f0',
-  },
-  formHeader: {
-    marginBottom: '24px',
-    borderBottom: '1px solid #f1f5f9',
-    paddingBottom: '16px',
-  },
-  heading: {
-    fontSize: '24px',
-    fontWeight: '800',
-    color: '#0f172a',
-    margin: '0 0 6px 0',
-  },
-  subheading: {
-    fontSize: '13px',
-    color: '#64748b',
-    margin: 0,
-  },
-  row: {
-    display: 'flex',
-    gap: '16px',
-    marginBottom: '16px',
-    flexWrap: 'wrap',
-  },
-  col: {
-    flex: '1 1 280px',
-  },
-  field: {
-    marginBottom: '16px',
-  },
-  label: {
-    display: 'block',
-    fontSize: '13px',
-    fontWeight: '600',
-    color: '#334155',
-    marginBottom: '6px',
-  },
-  input: {
-    width: '100%',
-    padding: '10px 12px',
-    border: '1px solid #cbd5e1',
-    borderRadius: '6px',
-    fontSize: '14px',
-    color: '#1e293b',
-    outline: 'none',
-    boxSizing: 'border-box',
-  },
-  textarea: {
-    width: '100%',
-    padding: '10px 12px',
-    border: '1px solid #cbd5e1',
-    borderRadius: '6px',
-    fontSize: '14px',
-    color: '#1e293b',
-    fontFamily: 'inherit',
-    lineHeight: '1.5',
-    outline: 'none',
-    boxSizing: 'border-box',
-    resize: 'vertical',
-  },
-  checkboxGroup: {
-    display: 'flex',
-    gap: '16px',
-    paddingTop: '6px',
-  },
-  checkboxLabel: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-    fontSize: '13px',
-    color: '#334155',
-    cursor: 'pointer',
-    paddingTop: '6px',
-  },
-  formFooter: {
-    marginTop: '28px',
-    borderTop: '1px solid #f1f5f9',
-    paddingTop: '20px',
-  },
-  submitBtn: {
-    width: '100%',
-    padding: '14px',
-    backgroundColor: '#2563eb',
-    color: '#ffffff',
-    border: 'none',
-    borderRadius: '8px',
-    fontSize: '16px',
-    fontWeight: '700',
-    cursor: 'pointer',
-    boxShadow: '0 4px 6px -1px rgba(37, 99, 235, 0.25)',
-  },
-  error: {
-    backgroundColor: '#fef2f2',
-    color: '#dc2626',
-    padding: '12px',
-    borderRadius: '6px',
-    marginBottom: '20px',
-    fontSize: '13px',
-  },
-  successCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: '12px',
-    padding: '40px 32px',
-    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-    border: '1px solid #e2e8f0',
-    textAlign: 'center',
-  },
-  successHeader: {
-    marginBottom: '24px',
-  },
-  successTitle: {
-    fontSize: '22px',
-    fontWeight: '800',
-    color: '#166534',
-    margin: '0 0 6px 0',
-  },
-  successSubtitle: {
-    fontSize: '14px',
-    color: '#64748b',
-    margin: 0,
-  },
-  detailsPreview: {
-    backgroundColor: '#f8fafc',
-    border: '1px solid #e2e8f0',
-    borderRadius: '8px',
-    padding: '16px',
-    textAlign: 'left',
-    marginBottom: '24px',
-  },
-  linkBox: {
-    backgroundColor: '#eff6ff',
-    border: '1px solid #bfdbfe',
-    borderRadius: '8px',
-    padding: '16px',
-    textAlign: 'left',
-    marginBottom: '24px',
-  },
-  linkLabel: {
-    display: 'block',
-    fontSize: '13px',
-    fontWeight: '700',
-    color: '#1e40af',
-    marginBottom: '8px',
-  },
-  linkRow: {
-    display: 'flex',
-    gap: '10px',
-  },
-  linkInput: {
-    flex: 1,
-    padding: '10px 12px',
-    border: '1px solid #93c5fd',
-    borderRadius: '6px',
-    fontSize: '14px',
-    backgroundColor: '#ffffff',
-    color: '#1e293b',
-    outline: 'none',
-  },
-  copyBtn: {
-    padding: '10px 18px',
-    backgroundColor: '#1d4ed8',
-    color: '#ffffff',
-    border: 'none',
-    borderRadius: '6px',
-    fontWeight: '600',
-    cursor: 'pointer',
-    whiteSpace: 'nowrap',
-  },
-  qrContainer: {
-    backgroundColor: '#ffffff',
-    border: '1px solid #e2e8f0',
-    borderRadius: '8px',
-    padding: '24px',
-    display: 'inline-block',
-    marginBottom: '28px',
-  },
-  qrLabel: {
-    fontSize: '13px',
-    fontWeight: '600',
-    color: '#475569',
-    margin: '0 0 12px 0',
-  },
-  qrImage: {
-    width: '220px',
-    height: '220px',
-    borderRadius: '8px',
-    border: '1px solid #cbd5e1',
-    marginBottom: '12px',
-  },
-  downloadQrBtn: {
-    display: 'inline-block',
-    fontSize: '12px',
-    fontWeight: '600',
-    color: '#2563eb',
-    backgroundColor: '#f1f5f9',
-    padding: '6px 14px',
-    borderRadius: '4px',
-  },
-  actionButtons: {
-    display: 'flex',
-    justifyContent: 'center',
-    gap: '16px',
-    flexWrap: 'wrap',
-  },
-  createAnotherBtn: {
-    padding: '12px 20px',
-    backgroundColor: '#f1f5f9',
-    color: '#334155',
-    border: '1px solid #cbd5e1',
-    borderRadius: '6px',
-    fontSize: '14px',
-    fontWeight: '600',
-    cursor: 'pointer',
-  },
-  viewDetailBtn: {
-    padding: '12px 24px',
-    backgroundColor: '#2563eb',
-    color: '#ffffff',
-    borderRadius: '6px',
-    fontSize: '14px',
-    fontWeight: '600',
-    display: 'inline-block',
-  },
-};
-
 export default CreateAssignment;
-
