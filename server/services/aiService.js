@@ -196,9 +196,10 @@ async function gradeWithAzureOpenAI({
   const systemPrompt = `You are an academic evaluation assistant for college assignments.
 Your task is to review the student's submission in isolation based ONLY on the provided assignment questions and max marks.
 Do NOT compare this submission to any other student.
+CRITICAL CONSTRAINT: The maximum possible mark for this assignment is ${maxMarks}. You MUST NEVER award more than ${maxMarks} marks under any circumstance.
 Always output a valid JSON object matching this schema exactly:
 {
-  "estimatedMarks": <number between 0 and maxMarks>,
+  "estimatedMarks": <number between 0 and ${maxMarks}>,
   "summary": "<2-3 sentence concise summary of the student's work>",
   "reasoning": "<1-2 sentence brief justification for the estimated score>"
 }`;
@@ -208,67 +209,81 @@ Assignment Title: ${title}
 Instructions: ${instructions || "None"}
 Questions:
 ${questions}
-Maximum Marks: ${maxMarks}
+Maximum Marks: ${maxMarks} (Strict limit: 0 to ${maxMarks})
 
 Student's Submitted Content:
 ${studentText}
 
-Evaluate and provide the JSON assessment:`;
+Evaluate and provide the JSON assessment. Ensure estimatedMarks is between 0 and ${maxMarks}:`;
 
-  try {
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "api-key": apiKey,
-      },
-      body: JSON.stringify({
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
-        ],
-        response_format: { type: "json_object" },
-      }),
-    });
+  const maxRetries = 2;
+  let lastError = null;
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Azure OpenAI error response:", errorText);
-      return {
-        estimatedMarks: null,
-        summary: "AI grading service error.",
-        reasoning: `HTTP ${response.status}: ${errorText.substring(0, 100)}`,
-        status: "FAILED",
-      };
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "api-key": apiKey,
+        },
+        body: JSON.stringify({
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt },
+          ],
+          response_format: { type: "json_object" },
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`Azure OpenAI attempt ${attempt} failed:`, errorText);
+        lastError = `HTTP ${response.status}: ${errorText.substring(0, 100)}`;
+        continue;
+      }
+
+      const data = await response.json();
+      const rawContent = data.choices?.[0]?.message?.content || "{}";
+      const parsed = JSON.parse(rawContent);
+
+      let marks = parsed.estimatedMarks;
+
+      // Validate marks from AI response
+      if (typeof marks === "number" && !isNaN(marks)) {
+        // If AI hallucinated a mark greater than maxMarks or less than 0, retry
+        if ((marks > maxMarks || marks < 0) && attempt < maxRetries) {
+          console.warn(
+            `⚠️ AI awarded ${marks} which exceeds maxMarks (${maxMarks}). Re-prompting AI (attempt ${attempt + 1})...`
+          );
+          continue;
+        }
+
+        // Hard boundary protection (never exceeds maxMarks or falls below 0)
+        marks = Math.max(0, Math.min(Number(maxMarks), Math.round(marks)));
+
+        return {
+          estimatedMarks: marks,
+          summary: parsed.summary || "Summary generated.",
+          reasoning: parsed.reasoning || "Evaluation completed.",
+          status: "AI_ESTIMATED",
+        };
+      } else if (attempt < maxRetries) {
+        console.warn(`⚠️ AI returned non-numeric marks (${marks}). Retrying...`);
+        continue;
+      }
+    } catch (err) {
+      console.error(`Error during Azure OpenAI attempt ${attempt}:`, err.message);
+      lastError = err.message;
     }
-
-    const data = await response.json();
-    const rawContent = data.choices?.[0]?.message?.content || "{}";
-    const parsed = JSON.parse(rawContent);
-
-    // Bound estimatedMarks within 0 and maxMarks
-    let marks = parsed.estimatedMarks;
-    if (typeof marks === "number") {
-      marks = Math.max(0, Math.min(maxMarks, Math.round(marks)));
-    } else {
-      marks = null;
-    }
-
-    return {
-      estimatedMarks: marks,
-      summary: parsed.summary || "Summary generated.",
-      reasoning: parsed.reasoning || "Evaluation completed.",
-      status: "AI_ESTIMATED",
-    };
-  } catch (err) {
-    console.error("Error during Azure OpenAI grading:", err.message);
-    return {
-      estimatedMarks: null,
-      summary: "AI grading evaluation failed.",
-      reasoning: err.message,
-      status: "FAILED",
-    };
   }
+
+  return {
+    estimatedMarks: null,
+    summary: "AI grading evaluation failed.",
+    reasoning: lastError || "Failed after retries.",
+    status: "FAILED",
+  };
 }
 
 // ─── PHASE 3: SAPLING AI CONTENT DETECTION (ROUND-ROBIN) ──────────────────────
@@ -277,29 +292,63 @@ Evaluate and provide the JSON assessment:`;
 let saplingKeyIndex = 0;
 
 /**
+ * Helper to retrieve all configured Sapling keys from environment.
+ * Supports both comma-separated SAPLING_API_KEYS and individual SAPLING_API_KEY1/2/3.
+ * Automatically cleans any trailing inline comments (e.g., "#...") and whitespace.
+ */
+function getSaplingApiKeys() {
+  const keys = [];
+
+  if (process.env.SAPLING_API_KEYS) {
+    process.env.SAPLING_API_KEYS.split(",").forEach((k) => {
+      const clean = k.split("#")[0].trim();
+      if (clean) keys.push(clean);
+    });
+  }
+
+  // Also check individual keys SAPLING_API_KEY1, SAPLING_API_KEY2, ...
+  for (let i = 1; i <= 10; i++) {
+    const keyVal = process.env[`SAPLING_API_KEY${i}`];
+    if (keyVal) {
+      const clean = keyVal.split("#")[0].trim();
+      if (clean && !keys.includes(clean)) {
+        keys.push(clean);
+      }
+    }
+  }
+
+  return keys;
+}
+
+/**
  * Detects likelihood of AI-generated content using Sapling AI Detector API.
- * Uses a simple round-robin rotation across SAPLING_API_KEYS=key1,key2,key3.
- * Returns score (0-100%) and status without ever blocking a submission.
+ * Uses a strict round-robin rotation: key1 -> key2 -> key3 -> key1.
+ * If a key fails (e.g. rate limit/quota), falls back to the next key within the same request.
+ * Returns score (0-100%) and status without ever blocking a student's submission.
  * @param {string} text - Cleaned student text
  * @returns {Promise<Object>} { score, status }
  */
 async function detectAIContent(text) {
-  const rawKeys = process.env.SAPLING_API_KEYS || "";
-  const keys = rawKeys
-    .split(",")
-    .map((k) => k.trim())
-    .filter((k) => k.length > 0);
+  const keys = getSaplingApiKeys();
 
   if (keys.length === 0) {
+    console.warn("⚠️ No Sapling API keys configured. Skipping AI detection.");
     return { score: null, status: "SKIPPED" };
   }
 
-  // Attempt each key in round-robin order
   const totalKeys = keys.length;
+  const startKeyIndex = saplingKeyIndex % totalKeys;
+
+  // Attempt each key in round-robin sequence starting from current pointer
   for (let attempt = 0; attempt < totalKeys; attempt++) {
-    const currentKey = keys[(saplingKeyIndex + attempt) % totalKeys];
+    const activeIndex = (startKeyIndex + attempt) % totalKeys;
+    const currentKey = keys[activeIndex];
 
     try {
+      console.log(
+        `🔍 Running Sapling AI detection using Key #${activeIndex + 1} (attempt ${attempt + 1}/${totalKeys})...`
+      );
+
       const response = await fetch("https://api.sapling.ai/api/v1/aidetect", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -311,21 +360,34 @@ async function detectAIContent(text) {
 
       if (response.ok) {
         const data = await response.json();
-        // Advance round-robin pointer for next submission
-        saplingKeyIndex = (saplingKeyIndex + 1) % totalKeys;
+        // Advance round-robin pointer to the NEXT key for subsequent submissions:
+        // key1 -> key2 -> key3 -> key1
+        saplingKeyIndex = (activeIndex + 1) % totalKeys;
 
         // Sapling returns score between 0 and 1
         const rawScore = typeof data.score === "number" ? data.score : 0;
         const scorePercentage = Math.round(rawScore * 100);
 
+        console.log(
+          `✅ Sapling detection successful on Key #${activeIndex + 1}. Score: ${scorePercentage}%. Next key index: #${saplingKeyIndex + 1}`
+        );
+
         return { score: scorePercentage, status: "COMPLETED" };
+      } else {
+        const errBody = await response.text();
+        console.warn(
+          `⚠️ Sapling Key #${activeIndex + 1} failed with HTTP ${response.status}: ${errBody.substring(0, 100)}`
+        );
       }
     } catch (err) {
-      console.warn(`Sapling key attempt ${attempt + 1} failed:`, err.message);
+      console.warn(`Sapling key #${activeIndex + 1} request error:`, err.message);
     }
   }
 
-  // If all keys fail (e.g. quota exhausted), return safe fallback
+  // Advance pointer even on failure to avoid getting stuck on an exhausted key
+  saplingKeyIndex = (saplingKeyIndex + 1) % totalKeys;
+
+  // If all keys fail (e.g. quota exhausted across all free accounts), return safe fallback
   return { score: null, status: "FAILED" };
 }
 

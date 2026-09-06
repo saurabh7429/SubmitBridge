@@ -16,6 +16,7 @@ function StudentSubmit() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  const [submissionResult, setSubmissionResult] = useState(null);
 
   const fileInputRef = useRef(null);
 
@@ -133,6 +134,7 @@ function StudentSubmit() {
 
       const res = await submitAssignment(assignmentId, formData);
       setSuccessMessage(res.data.message || 'Submission successful!');
+      setSubmissionResult(res.data.submission || null);
     } catch (err) {
       setError(err.response?.data?.message || 'Submission failed. Please try again.');
     } finally {
@@ -231,6 +233,19 @@ function StudentSubmit() {
             <p style={styles.successText}>
               Your assignment has been securely uploaded to the portal.
             </p>
+            {submissionResult?.aiDetectionScore !== null &&
+              submissionResult?.aiDetectionScore !== undefined &&
+              submissionResult.aiDetectionScore > 50 && (
+                <div style={styles.aiWarningCard}>
+                  <h4 style={{ margin: '0 0 6px 0', color: '#991b1b', fontSize: '14px' }}>
+                    ⚠️ Originality Advisory: {submissionResult.aiDetectionScore}% AI Likelihood Detected
+                  </h4>
+                  <p style={{ margin: 0, fontSize: '13px', color: '#7f1d1d', lineHeight: '1.4' }}>
+                    Our preliminary screening flagged high probability of AI-generated content. If you used AI drafting tools, consider reviewing your answers in your own words and resubmitting before the due date.
+                  </p>
+                </div>
+              )}
+
             <div style={styles.resubmitNotice}>
               <p style={{ margin: 0, fontSize: '13px', color: '#166534' }}>
                 💡 <strong>Need to make changes?</strong> You can resubmit anytime before the deadline. Submitting again with the same Roll Number will automatically overwrite your previous file.
@@ -239,6 +254,7 @@ function StudentSubmit() {
             <button
               onClick={() => {
                 setSuccessMessage('');
+                setSubmissionResult(null);
                 setSelectedFile(null);
               }}
               style={styles.resubmitBtn}
@@ -622,6 +638,14 @@ const styles = {
     fontSize: '14px',
     color: '#475569',
     margin: '0 0 16px 0',
+  },
+  aiWarningCard: {
+    backgroundColor: '#fef2f2',
+    border: '1px solid #fecaca',
+    borderRadius: '8px',
+    padding: '14px',
+    textAlign: 'left',
+    marginBottom: '16px',
   },
   resubmitNotice: {
     backgroundColor: '#f0fdf4',

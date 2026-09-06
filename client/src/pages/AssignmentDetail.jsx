@@ -308,7 +308,7 @@ function AssignmentDetail() {
                           {sub.ai_estimated_marks !== null && sub.ai_estimated_marks !== undefined ? (
                             <div>
                               <span style={styles.aiMarkBadge}>
-                                🤖 {sub.ai_estimated_marks} / {assignment.max_marks}
+                                🤖 {Math.min(Number(assignment.max_marks), Math.max(0, sub.ai_estimated_marks))} / {assignment.max_marks}
                               </span>
                               <div>
                                 <button
