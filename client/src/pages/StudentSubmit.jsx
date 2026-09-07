@@ -144,84 +144,88 @@ function StudentSubmit() {
       />
 
       <main className="student-content-container">
-        {/* ── Assignment Info Overview Card ── */}
-        <StudentOverview assignment={assignment} />
+        <div className="student-grid">
+          {/* ── Left Column: Assignment Info Overview Card ── */}
+          <StudentOverview assignment={assignment} />
 
-        {/* ── Form / Confirmation / Deadline Closed ── */}
-        {successMessage ? (
-          <SubmissionSuccess
-            message={successMessage}
-            rollNumber={rollNumber}
-            submissionResult={submissionResult}
-            onReset={handleReset}
-          />
-        ) : deadlinePassed ? (
-          <div className="student-card card-neumorphic" style={{ textAlign: 'center', padding: 40 }}>
-            <div style={{ fontSize: 44, marginBottom: 12 }}>⏰</div>
-            <h3 style={{ color: 'var(--danger)', fontSize: 20, marginBottom: 8 }}>
-              Submissions Closed
-            </h3>
-            <p style={{ color: 'var(--text-muted)', maxWidth: 440, margin: '0 auto' }}>
-              The deadline for this assignment has expired. New submissions are no longer accepted.
-            </p>
-          </div>
-        ) : (
-          <div className="student-card card-neumorphic">
-            <h3 className="form-section-title">Submit Your Work</h3>
-            <p className="form-section-subtitle">
-              Enter your student details and upload your assignment file.
-            </p>
-
-            {error && <div className="alert alert-error">{error}</div>}
-
-            <form onSubmit={handleSubmit} className="student-form">
-              <div className="form-row form-row--2col">
-                <FormField label="Full Name" required>
-                  <input
-                    type="text"
-                    className="form-input"
-                    value={studentName}
-                    onChange={(e) => setStudentName(e.target.value)}
-                    required
-                    placeholder="e.g. Aryan Sharma"
-                  />
-                </FormField>
-
-                <FormField
-                  label="Roll Number / Student ID"
-                  required
-                  hint="Used to identify and update your submission if you re-upload."
-                >
-                  <input
-                    type="text"
-                    className="form-input"
-                    value={rollNumber}
-                    onChange={(e) => setRollNumber(e.target.value)}
-                    required
-                    placeholder="e.g. 21CS042"
-                  />
-                </FormField>
-              </div>
-
-              {/* Upload Dropzone */}
-              <FileDropZone
-                selectedFile={selectedFile}
-                onFileSelect={handleFileSelect}
-                allowedFileTypes={assignment.allowed_file_types}
-                fileError={fileError}
+          {/* ── Right Column: Form / Confirmation / Deadline Closed ── */}
+          <div className="student-form-pane">
+            {successMessage ? (
+              <SubmissionSuccess
+                message={successMessage}
+                rollNumber={rollNumber}
+                submissionResult={submissionResult}
+                onReset={handleReset}
               />
+            ) : deadlinePassed ? (
+              <div className="student-card card-neumorphic" style={{ textAlign: 'center', padding: 40 }}>
+                <div style={{ fontSize: 44, marginBottom: 12 }}>⏰</div>
+                <h3 style={{ color: 'var(--danger)', fontSize: 20, marginBottom: 8 }}>
+                  Submissions Closed
+                </h3>
+                <p style={{ color: 'var(--muted)', maxWidth: 440, margin: '0 auto' }}>
+                  The deadline for this assignment has expired. New submissions are no longer accepted.
+                </p>
+              </div>
+            ) : (
+              <div className="student-card card-neumorphic">
+                <h3 className="form-section-title">Submit Your Work</h3>
+                <p className="form-section-subtitle">
+                  Enter your student details and upload your assignment file.
+                </p>
 
-              <button
-                type="submit"
-                disabled={submitting}
-                className="btn btn-primary btn-glow btn--full btn--lg"
-                style={{ marginTop: 12 }}
-              >
-                {submitting ? 'Uploading & Analyzing...' : 'Submit Assignment Now →'}
-              </button>
-            </form>
+                {error && <div className="alert alert-error">{error}</div>}
+
+                <form onSubmit={handleSubmit} className="student-form">
+                  <div className="form-row form-row--2col">
+                    <FormField label="Full Name" required>
+                      <input
+                        type="text"
+                        className="form-input"
+                        value={studentName}
+                        onChange={(e) => setStudentName(e.target.value)}
+                        required
+                        placeholder="e.g. Aryan Sharma"
+                      />
+                    </FormField>
+
+                    <FormField
+                      label="Roll Number / Student ID"
+                      required
+                      hint="Used to identify and update your submission if you re-upload."
+                    >
+                      <input
+                        type="text"
+                        className="form-input"
+                        value={rollNumber}
+                        onChange={(e) => setRollNumber(e.target.value)}
+                        required
+                        placeholder="e.g. 21CS042"
+                      />
+                    </FormField>
+                  </div>
+
+                  {/* Upload Dropzone */}
+                  <FileDropZone
+                    selectedFile={selectedFile}
+                    onFileSelect={handleFileSelect}
+                    allowedFileTypes={assignment.allowed_file_types}
+                    fileError={fileError}
+                  />
+
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="btn btn-primary btn-glow btn--full btn--lg"
+                    style={{ marginTop: 12 }}
+                  >
+                    {submitting ? 'Uploading & Analyzing...' : 'Submit Assignment Now →'}
+                  </button>
+                </form>
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </main>
     </div>
   );

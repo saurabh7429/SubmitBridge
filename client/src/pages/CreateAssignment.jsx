@@ -161,26 +161,28 @@ function CreateAssignment() {
                 />
               </FormField>
 
-              <FormField label="Submission Instructions & Guidelines (Optional)">
-                <textarea
-                  className="form-textarea"
-                  rows={3}
-                  value={instructions}
-                  onChange={(e) => setInstructions(e.target.value)}
-                  placeholder="e.g. Provide step-by-step Gantt charts. Maintain academic integrity. Hand-written or typed accepted."
-                />
-              </FormField>
+              <div className="form-row form-row--2col">
+                <FormField label="Submission Instructions & Guidelines (Optional)">
+                  <textarea
+                    className="form-textarea"
+                    rows={6}
+                    value={instructions}
+                    onChange={(e) => setInstructions(e.target.value)}
+                    placeholder="e.g. Provide step-by-step Gantt charts. Maintain academic integrity. Hand-written or typed accepted."
+                  />
+                </FormField>
 
-              <FormField label="Assignment Questions / Problem Statements" required>
-                <textarea
-                  className="form-textarea"
-                  rows={5}
-                  value={questions}
-                  onChange={(e) => setQuestions(e.target.value)}
-                  required
-                  placeholder="1. Compare Preemptive and Non-Preemptive scheduling algorithms.&#10;2. Solve the following Round Robin problem with Quantum = 2ms..."
-                />
-              </FormField>
+                <FormField label="Assignment Questions / Problem Statements" required>
+                  <textarea
+                    className="form-textarea"
+                    rows={6}
+                    value={questions}
+                    onChange={(e) => setQuestions(e.target.value)}
+                    required
+                    placeholder="1. Compare Preemptive and Non-Preemptive scheduling algorithms.&#10;2. Solve the following Round Robin problem with Quantum = 2ms..."
+                  />
+                </FormField>
+              </div>
 
               <div className="form-row form-row--2col">
                 <FormField label="Maximum Marks" required>
