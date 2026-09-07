@@ -1,7 +1,14 @@
 import axios from "axios";
 
-// Base relative API path — Vite proxy forwards /api to http://localhost:5000 in dev
-const API_BASE = "/api";
+// Base API path — uses VITE_API_URL in production (e.g. Render backend), or relative /api for local Vite dev proxy
+const getApiBase = () => {
+  const envUrl = import.meta.env.VITE_API_URL;
+  if (!envUrl) return "/api";
+  const clean = envUrl.replace(/\/+$/, "");
+  return clean.endsWith("/api") ? clean : `${clean}/api`;
+};
+
+const API_BASE = getApiBase();
 
 // Helper: retrieve JWT token from localStorage
 const getToken = () => localStorage.getItem("token");
