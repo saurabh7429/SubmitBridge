@@ -2044,7 +2044,11 @@ button, input, textarea, select {
   text-align: center;
 }
 
-.sb-dropzone:hover, .sb-dropzone--dragging {
+.sb-dropzone * {
+  pointer-events: none;
+}
+
+.sb-dropzone:hover, .sb-dropzone--dragging, .sb-dropzone:focus-within {
   border-color: var(--sb-primary-accent);
   background-color: var(--sb-primary-subtle);
 }
