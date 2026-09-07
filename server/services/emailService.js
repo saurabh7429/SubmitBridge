@@ -53,12 +53,47 @@ async function sendOtpEmail({ to, name, otp }) {
   if (resendApiKey) {
     try {
       const resend = new Resend(resendApiKey);
-      const { data, error } = await resend.emails.send({
+      const testEmail = process.env.RESEND_TEST_EMAIL || "m.saurya1600x@gmail.com";
+
+      // Attempt direct send to recipient
+      let { data, error } = await resend.emails.send({
         from: fromEmail,
         to: [to],
         subject: `Your SubmitBridge Verification Code: ${otp}`,
         html: emailHtml,
       });
+
+      // If Resend test mode limits sending to account owner email only:
+      if (error && error.message && error.message.includes("testing emails to your own email address")) {
+        console.log(`[Resend Default Test Mode]: Forwarding OTP email for ${to} to verified inbox ${testEmail}`);
+
+        const testModeHtml = emailHtml.replace(
+          `<h2>Faculty Verification Code</h2>`,
+          `<h2>Faculty Verification Code</h2>
+           <div style="background:#fef3c7;border:1px solid #f59e0b;padding:12px 16px;border-radius:8px;margin:16px 0;font-size:14px;color:#92400e;">
+             <strong>[Resend Default Test Mode]</strong><br/>
+             This OTP was requested for faculty registration: <strong>${to}</strong>
+           </div>`
+        );
+
+        const retry = await resend.emails.send({
+          from: fromEmail,
+          to: [testEmail],
+          subject: `[Test Mode - For ${to}] Your SubmitBridge Code: ${otp}`,
+          html: testModeHtml,
+        });
+
+        if (!retry.error) {
+          console.log(`[EmailService] OTP email delivered to test inbox ${testEmail} for ${to} (ID: ${retry.data?.id})`);
+          return {
+            success: true,
+            messageId: retry.data?.id,
+            testModeRedirect: true,
+            deliveredTo: testEmail,
+            warning: `[Test Mode] Verification OTP was sent to your Resend inbox (${testEmail}). Check your email to verify ${to}.`,
+          };
+        }
+      }
 
       if (error) {
         console.error("[Resend Notice]:", error.message);
@@ -70,9 +105,7 @@ async function sendOtpEmail({ to, name, otp }) {
         return {
           success: false,
           error: error.message,
-          warning: error.message.includes("testing emails to your own email address")
-            ? `Resend test mode allows sending to the account owner's email. (OTP for ${to} is also logged in terminal: ${otp})`
-            : error.message,
+          warning: `OTP generated. (Logged in terminal: ${otp})`,
         };
       }
 
