@@ -16,7 +16,7 @@ export function StatsGrid({ activeCount = 0, trashCount = 0 }) {
         </div>
         <div className="stat-card__data">
           <span className="stat-card__value">{activeCount}</span>
-          <span className="stat-card__label">Total Assignments</span>
+          <span className="stat-card__label">Active Assignments</span>
         </div>
         <div className="stat-card__footer-hint">
           <span className="pulsing-dot pulsing-dot--green" />
