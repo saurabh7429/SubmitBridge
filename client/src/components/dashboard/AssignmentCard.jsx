@@ -1,32 +1,14 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import Badge from '../common/Badge';
 import StatusPill from '../common/StatusPill';
+import CopyButton from '../common/CopyButton';
 import { formatDateTime, getDaysRemaining, isOverdue } from '../../utils/dateUtils';
 
 export function AssignmentCard({ assignment, onDelete, onRestore, isActionLoading }) {
   const isDeleted = Boolean(assignment.is_deleted);
   const overdue = isOverdue(assignment.due_date);
-  const [copied, setCopied] = useState(false);
-
   const studentLink = `${window.location.origin}/submit/${assignment.id}`;
-
-  const handleCopyLink = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (navigator.clipboard && window.isSecureContext) {
-      navigator.clipboard.writeText(studentLink);
-    } else {
-      const textarea = document.createElement('textarea');
-      textarea.value = studentLink;
-      document.body.appendChild(textarea);
-      textarea.select();
-      document.execCommand('copy');
-      document.body.removeChild(textarea);
-    }
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
 
   return (
     <div className={`assignment-card ${isDeleted ? 'assignment-card--deleted' : ''}`}>
@@ -127,29 +109,12 @@ export function AssignmentCard({ assignment, onDelete, onRestore, isActionLoadin
               </svg>
             </Link>
 
-            <button
-              type="button"
-              onClick={handleCopyLink}
-              title="Copy student submission link"
-              className={`btn btn-secondary btn-card-share ${copied ? 'btn-copy-success' : ''}`}
-            >
-              {copied ? (
-                <>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                    <polyline points="20 6 9 17 4 12"/>
-                  </svg>
-                  <span>Copied</span>
-                </>
-              ) : (
-                <>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-                  </svg>
-                  <span>Copy Link</span>
-                </>
-              )}
-            </button>
+            <CopyButton
+              text={studentLink}
+              label="Copy Link"
+              copiedLabel="Copied"
+              className="btn-card-share"
+            />
           </div>
         ) : (
           <div className="card-actions-dual">
