@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import QRCode from 'qrcode';
 import CopyButton from '../common/CopyButton';
 
 export function CreateAssignmentSuccess({ result, onReset }) {
@@ -10,6 +11,23 @@ export function CreateAssignmentSuccess({ result, onReset }) {
   if (shareLink.includes('localhost') && !window.location.hostname.includes('localhost') && result?.assignment?.id) {
     shareLink = `${window.location.origin}/submit/${result.assignment.id}`;
   }
+
+  const [activeQr, setActiveQr] = useState(result?.qrCode);
+
+  useEffect(() => {
+    if (shareLink) {
+      QRCode.toDataURL(shareLink, {
+        width: 300,
+        margin: 2,
+        color: {
+          dark: '#1a1a2e',
+          light: '#ffffff',
+        },
+      })
+        .then((dataUrl) => setActiveQr(dataUrl))
+        .catch(() => setActiveQr(result?.qrCode));
+    }
+  }, [shareLink, result?.qrCode]);
 
   return (
     <div className="sb-success-container">
@@ -26,8 +44,8 @@ export function CreateAssignmentSuccess({ result, onReset }) {
         </p>
 
         <div className="sb-success-qr-box">
-          {result.qrCode ? (
-            <img src={result.qrCode} alt="Student QR Code" className="sb-success-qr-img" />
+          {activeQr ? (
+            <img src={activeQr} alt="Student QR Code" className="sb-success-qr-img" />
           ) : null}
         </div>
 

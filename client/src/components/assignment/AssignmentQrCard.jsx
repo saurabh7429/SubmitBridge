@@ -1,7 +1,25 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import QRCode from 'qrcode';
 import CopyButton from '../common/CopyButton';
 
 export function AssignmentQrCard({ qrCode, shareLink }) {
+  const [activeQr, setActiveQr] = useState(qrCode);
+
+  useEffect(() => {
+    if (shareLink) {
+      QRCode.toDataURL(shareLink, {
+        width: 300,
+        margin: 2,
+        color: {
+          dark: '#1a1a2e',
+          light: '#ffffff',
+        },
+      })
+        .then((dataUrl) => setActiveQr(dataUrl))
+        .catch(() => setActiveQr(qrCode));
+    }
+  }, [shareLink, qrCode]);
+
   return (
     <div className="sb-card sb-detail-qr-card">
       <div className="sb-qr-header">
@@ -23,8 +41,8 @@ export function AssignmentQrCard({ qrCode, shareLink }) {
       </div>
 
       <div className="sb-qr-image-frame">
-        {qrCode ? (
-          <img src={qrCode} alt="Student Submission QR Code" className="sb-qr-image" />
+        {activeQr ? (
+          <img src={activeQr} alt="Student Submission QR Code" className="sb-qr-image" />
         ) : (
           <div className="sb-qr-empty">QR Code Generating...</div>
         )}
