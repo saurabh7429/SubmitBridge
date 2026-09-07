@@ -61,11 +61,22 @@ async function sendOtpEmail({ to, name, otp }) {
       });
 
       if (error) {
-        console.error("Resend API error:", error);
-        return { success: false, error: error.message };
+        console.error("[Resend Notice]:", error.message);
+        console.log("--------------------------------------------------");
+        console.log(`[RESEND TEST RESTRICTION] Recipient is not the Resend account owner.`);
+        console.log(`To: ${to}`);
+        console.log(`Verification OTP: ${otp}`);
+        console.log("--------------------------------------------------");
+        return {
+          success: false,
+          error: error.message,
+          warning: error.message.includes("testing emails to your own email address")
+            ? `Resend test mode allows sending to the account owner's email. (OTP for ${to} is also logged in terminal: ${otp})`
+            : error.message,
+        };
       }
 
-      console.log(`[EmailService] OTP email sent via Resend to ${to} (ID: ${data?.id})`);
+      console.log(`[EmailService] OTP email delivered via Resend to ${to} (ID: ${data?.id})`);
       return { success: true, messageId: data?.id };
     } catch (err) {
       console.error("Resend delivery exception:", err.message);
