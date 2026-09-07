@@ -123,7 +123,7 @@ function Register() {
 
     const cleanOtp = otp.trim();
     if (!cleanOtp) {
-      setError("Please enter the 6-digit verification code.");
+      setError("Please enter the verification code.");
       return;
     }
 
@@ -365,22 +365,22 @@ function Register() {
             <div className="sb-otp-notice">
               <div className="sb-otp-icon">✉️</div>
               <p className="sb-otp-text">
-                Enter the 6-digit confirmation code sent to:
+                Enter the confirmation code sent to:
                 <br />
                 <strong className="sb-otp-email">{email}</strong>
               </p>
             </div>
 
             <div className="sb-form-group">
-              <label className="sb-form-label">6-Digit Verification Code</label>
+              <label className="sb-form-label">Verification Code (OTP)</label>
               <input
                 type="text"
                 className="sb-input sb-input--otp"
                 value={otp}
-                onChange={(e) => setOtp(e.target.value.replace(/[^0-9]/g, "").slice(0, 6))}
+                onChange={(e) => setOtp(e.target.value.replace(/[^a-zA-Z0-9]/g, "").slice(0, 10))}
                 required
-                maxLength={6}
-                placeholder="123456"
+                maxLength={10}
+                placeholder="Enter verification code"
                 autoFocus
                 autoComplete="one-time-code"
               />
@@ -388,7 +388,7 @@ function Register() {
 
             <button
               type="submit"
-              disabled={verifyLoading || otp.length < 6}
+              disabled={verifyLoading || otp.trim().length < 6}
               className="sb-btn sb-btn-primary sb-btn--lg sb-btn--block"
             >
               {verifyLoading ? "Verifying..." : "Confirm & Access Dashboard →"}
