@@ -4,6 +4,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const supabase = require("../supabase");
 const authMiddleware = require("../middleware/auth");
+const { sendOtpEmail } = require("../services/emailService");
 
 // Helper to generate JWT token
 const generateToken = (teacher) => {
@@ -281,10 +282,18 @@ router.post("/register-initiate", async (req, res) => {
       otpCode = Math.floor(100000 + Math.random() * 900000).toString();
     }
 
+    // 3. Dispatch verification email directly to user's inbox
+    const emailRes = await sendOtpEmail({
+      to: cleanEmail,
+      name: name.trim(),
+      otp: otpCode,
+    });
+
     res.json({
       success: true,
-      message: `Verification code generated for ${cleanEmail}.`,
-      otpCode: otpCode,
+      message: `Verification code sent to ${cleanEmail}. Please check your inbox.`,
+      emailSent: emailRes.success,
+      warning: emailRes.warning,
     });
   } catch (err) {
     console.error("Register initiate error:", err);

@@ -97,18 +97,14 @@ function Register() {
         password: password,
       });
 
-      // 2. Move directly to OTP Verification screen without triggering client email rate limits
+      // 2. Move directly to OTP Verification screen (keep OTP field empty for user to enter)
       setStep("verify");
+      setOtp("");
       setResendCooldown(60);
-
-      if (res.data?.otpCode) {
-        setOtp(res.data.otpCode);
-        setInfoMessage(
-          `Verification code ready for ${email}. You can confirm directly below.`
-        );
-      } else {
-        setInfoMessage(`Verification code sent to ${email}. Check your inbox.`);
-      }
+      setInfoMessage(
+        res.data?.warning ||
+          `Verification code sent to ${email}. Please check your inbox and enter the 6-digit code below.`
+      );
     } catch (err) {
       setError(
         err.response?.data?.message || err.message || "Registration failed. Please try again."
@@ -185,10 +181,10 @@ function Register() {
         password: password,
       });
 
-      if (res.data?.otpCode) {
-        setOtp(res.data.otpCode);
+      if (res.data?.success) {
+        setOtp("");
         setResendCooldown(60);
-        setInfoMessage(`Fresh verification code generated for ${email}. You can confirm directly.`);
+        setInfoMessage(`Fresh verification code sent to ${email}. Check your inbox.`);
         return;
       }
 
