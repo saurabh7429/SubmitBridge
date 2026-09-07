@@ -202,6 +202,74 @@ router.post("/demo", async (req, res) => {
   }
 });
 
+// ─── POST /api/auth/google ────────────────────────────────────────────────────
+// Teacher Google OAuth Sign-In / Register
+router.post("/google", async (req, res) => {
+  const { email, name, collegeName } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ message: "Email is required." });
+  }
+
+  try {
+    const cleanEmail = email.toLowerCase().trim();
+
+    // Check if teacher exists
+    let { data: teacher, error: fetchError } = await supabase
+      .from("teachers")
+      .select("*")
+      .eq("email", cleanEmail)
+      .maybeSingle();
+
+    if (fetchError) {
+      return res.status(500).json({ message: "Database error.", error: fetchError.message });
+    }
+
+    if (!teacher) {
+      // Create new teacher record for Google user
+      const salt = await bcrypt.genSalt(10);
+      const dummyPassword = await bcrypt.hash(Math.random().toString(36) + Date.now(), salt);
+      const teacherName = (name || cleanEmail.split("@")[0] || "Faculty Member").trim();
+      const institution = (collegeName || "Faculty Member").trim();
+
+      const { data: newTeacher, error: insertError } = await supabase
+        .from("teachers")
+        .insert([
+          {
+            name: teacherName,
+            email: cleanEmail,
+            password: dummyPassword,
+            college_name: institution,
+          },
+        ])
+        .select("id, name, email, college_name")
+        .single();
+
+      if (insertError) {
+        return res.status(500).json({ message: "Failed to register teacher.", error: insertError.message });
+      }
+      teacher = newTeacher;
+    }
+
+    const token = generateToken(teacher);
+
+    res.json({
+      message: "Google sign-in successful!",
+      token,
+      teacher: {
+        id: teacher.id,
+        name: teacher.name,
+        email: teacher.email,
+        collegeName: teacher.college_name,
+      },
+    });
+  } catch (err) {
+    console.error("Google auth error:", err);
+    res.status(500).json({ message: "Server error during Google auth.", error: err.message });
+  }
+});
+
+
 
 // ─── GET /api/auth/me ─────────────────────────────────────────────────────────
 // Fetch current logged in teacher details

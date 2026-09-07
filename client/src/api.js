@@ -37,7 +37,11 @@ export const loginTeacher = (email, password) =>
 export const demoFacultyLogin = () =>
   axios.post(`${API_BASE}/auth/demo`);
 
+export const googleFacultyAuth = (data) =>
+  axios.post(`${API_BASE}/auth/google`, data);
+
 export const getTeacherProfile = () =>
+
   axios.get(`${API_BASE}/auth/me`);
 
 

@@ -2142,7 +2142,32 @@ button, input, textarea, select {
   text-transform: uppercase;
 }
 
+.sb-btn-google {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background-color: #ffffff;
+  color: #1e293b;
+  border: 2px solid var(--sb-border);
+  font-weight: 700;
+  font-size: 14px;
+  padding: 11px 18px;
+  border-radius: var(--sb-radius-md);
+  box-shadow: var(--sb-shadow-xs);
+  cursor: pointer;
+  transition: all var(--sb-transition-fast);
+}
+
+.sb-btn-google:hover {
+  background-color: #f8fafc;
+  border-color: #94a3b8;
+  box-shadow: var(--sb-shadow-sm);
+  transform: translateY(-1px);
+}
+
 .sb-btn-demo {
+
   background: #f8fafc;
   border: 2px dashed #6366f1;
   color: #3730a3;
