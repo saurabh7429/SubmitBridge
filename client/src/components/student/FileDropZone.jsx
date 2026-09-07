@@ -10,6 +10,13 @@ export function FileDropZone({
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef(null);
 
+  const handleInputChange = (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (file) {
+      onFileSelect(file);
+    }
+  };
+
   const handleDragOver = (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -27,13 +34,8 @@ export function FileDropZone({
     e.stopPropagation();
     setIsDragging(false);
     const file = e.dataTransfer.files && e.dataTransfer.files[0];
-    if (file) onFileSelect(file);
-  };
-
-  const triggerFileDialog = () => {
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-      fileInputRef.current.click();
+    if (file) {
+      onFileSelect(file);
     }
   };
 
@@ -43,26 +45,29 @@ export function FileDropZone({
 
   return (
     <div className="sb-form-group">
-      <label className="sb-form-label">
+      <label className="sb-form-label" htmlFor="assignment-file-input">
         Upload Assignment Document <span className="sb-text-danger">*</span>
       </label>
 
+      {/* Hidden file input bound to label */}
       <input
         ref={fileInputRef}
+        id="assignment-file-input"
         type="file"
         accept={acceptTypes}
-        onChange={(e) => onFileSelect(e.target.files && e.target.files[0])}
-        style={{ display: 'none' }}
+        onChange={handleInputChange}
+        className="sb-file-input-hidden"
       />
 
-      <div
-        onClick={triggerFileDialog}
+      <label
+        htmlFor="assignment-file-input"
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         className={`sb-dropzone ${isDragging ? 'sb-dropzone--dragging' : ''} ${
           selectedFile ? 'sb-dropzone--selected' : ''
         }`}
+        style={{ display: 'block', cursor: 'pointer' }}
       >
         {selectedFile ? (
           <div className="sb-dropzone-attached">
@@ -92,9 +97,12 @@ export function FileDropZone({
             <p className="sb-dropzone-sub">
               Accepted: PDF{allowedFileTypes.includes('docx') ? ' or Word (DOCX)' : ''} (Max 10MB)
             </p>
+            <span className="sb-btn sb-btn-secondary sb-btn--sm" style={{ marginTop: 12, pointerEvents: 'none' }}>
+              Choose File from Device
+            </span>
           </div>
         )}
-      </div>
+      </label>
 
       {fileError && <p className="sb-form-error">{fileError}</p>}
     </div>

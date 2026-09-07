@@ -19,7 +19,7 @@ function CreateAssignment() {
   const [subjectCode, setSubjectCode] = useState('');
   const [title, setTitle] = useState('');
   const [instructions, setInstructions] = useState('');
-  const [questions, setQuestions] = useState('');
+  const [questionsList, setQuestionsList] = useState(['']);
   const [maxMarks, setMaxMarks] = useState(100);
   const [dueDate, setDueDate] = useState('');
   const [allowPdf, setAllowPdf] = useState(true);
@@ -35,6 +35,37 @@ function CreateAssignment() {
     }
   }, [teacher]);
 
+  const handleQuestionChange = (index, value) => {
+    // If multiple lines pasted at once, split into separate question inputs
+    if (value.includes('\n')) {
+      const lines = value.split('\n').map((l) => l.trim()).filter(Boolean);
+      if (lines.length > 1) {
+        setQuestionsList((prev) => {
+          const updated = [...prev];
+          updated.splice(index, 1, ...lines);
+          return updated;
+        });
+        return;
+      }
+    }
+    setQuestionsList((prev) => {
+      const updated = [...prev];
+      updated[index] = value;
+      return updated;
+    });
+  };
+
+  const handleAddQuestion = () => {
+    setQuestionsList((prev) => [...prev, '']);
+  };
+
+  const handleRemoveQuestion = (index) => {
+    setQuestionsList((prev) => {
+      if (prev.length <= 1) return [''];
+      return prev.filter((_, i) => i !== index);
+    });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -47,6 +78,19 @@ function CreateAssignment() {
       return;
     }
 
+    const validQuestions = questionsList
+      .map((q) => q.trim())
+      .filter(Boolean);
+
+    if (validQuestions.length === 0) {
+      setError('Please enter at least one question for this assignment.');
+      return;
+    }
+
+    const formattedQuestions = validQuestions
+      .map((q, idx) => `${idx + 1}. ${q.replace(/^\d+[\.\)]\s*/, '')}`)
+      .join('\n');
+
     setLoading(true);
     try {
       const payload = {
@@ -56,7 +100,7 @@ function CreateAssignment() {
         subjectCode,
         title,
         instructions,
-        questions,
+        questions: formattedQuestions,
         maxMarks: Number(maxMarks),
         dueDate: dueDate ? new Date(dueDate).toISOString() : null,
         allowLateSubmission: false,
@@ -76,7 +120,7 @@ function CreateAssignment() {
     setCreatedResult(null);
     setTitle('');
     setInstructions('');
-    setQuestions('');
+    setQuestionsList(['']);
   };
 
   return (
@@ -171,16 +215,69 @@ function CreateAssignment() {
                 />
               </FormField>
 
-              <FormField label="Assignment Questions / Problems" required>
-                <textarea
-                  className="sb-textarea"
-                  rows={6}
-                  value={questions}
-                  onChange={(e) => setQuestions(e.target.value)}
-                  required
-                  placeholder="1. Compare Preemptive and Non-Preemptive scheduling algorithms.&#10;2. Solve Round Robin with Quantum = 2ms..."
-                />
-              </FormField>
+              <div className="sb-form-group">
+                <div className="sb-questions-builder-header">
+                  <label className="sb-form-label" style={{ marginBottom: 0 }}>
+                    Assignment Questions <span className="sb-text-danger">*</span>
+                  </label>
+                  <span className="sb-questions-count-badge">
+                    {questionsList.filter((q) => q.trim()).length} Question{questionsList.filter((q) => q.trim()).length !== 1 ? 's' : ''}
+                  </span>
+                </div>
+                <p className="sb-form-hint" style={{ marginTop: 4, marginBottom: 12 }}>
+                  Add each assignment question in its own field. Click "+ Add Question" for more.
+                </p>
+
+                <div className="sb-questions-builder-list">
+                  {questionsList.map((q, idx) => (
+                    <div key={idx} className="sb-question-builder-row">
+                      <div className="sb-question-num-pill">
+                        Q{idx + 1}
+                      </div>
+                      <input
+                        type="text"
+                        className="sb-input sb-question-builder-input"
+                        value={q}
+                        onChange={(e) => handleQuestionChange(idx, e.target.value)}
+                        required={idx === 0}
+                        placeholder={
+                          idx === 0
+                            ? 'e.g. Compare Preemptive and Non-Preemptive scheduling algorithms.'
+                            : idx === 1
+                            ? 'e.g. Calculate the turn-around time for given processes.'
+                            : `Enter Question ${idx + 1}...`
+                        }
+                      />
+                      {questionsList.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveQuestion(idx)}
+                          className="sb-question-delete-btn"
+                          title="Remove question"
+                          aria-label={`Remove question ${idx + 1}`}
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <line x1="18" y1="6" x2="6" y2="18" />
+                            <line x1="6" y1="6" x2="18" y2="18" />
+                          </svg>
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleAddQuestion}
+                  className="sb-btn sb-btn-secondary sb-btn--sm sb-btn-add-question"
+                >
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="12" y1="5" x2="12" y2="19" />
+                    <line x1="5" y1="12" x2="19" y2="12" />
+                  </svg>
+                  <span>Add Question</span>
+                </button>
+              </div>
             </div>
 
             <div className="sb-form-row-2col">

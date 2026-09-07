@@ -24,7 +24,18 @@ router.post("/", async (req, res) => {
     allowedFileTypes,
   } = req.body;
 
-  if (!subject || !title || !questions) {
+  let formattedQuestions = "";
+  if (Array.isArray(questions)) {
+    formattedQuestions = questions
+      .map((q) => (typeof q === "string" ? q.trim() : ""))
+      .filter(Boolean)
+      .map((q, idx) => `${idx + 1}. ${q.replace(/^\d+[\.\)]\s*/, "")}`)
+      .join("\n");
+  } else if (typeof questions === "string") {
+    formattedQuestions = questions.trim();
+  }
+
+  if (!subject || !title || !formattedQuestions) {
     return res.status(400).json({
       message: "Subject name, assignment title, and questions are mandatory.",
     });
@@ -48,7 +59,7 @@ router.post("/", async (req, res) => {
           subject_code: (subjectCode || "").trim(),
           title: title.trim(),
           instructions: (instructions || "").trim(),
-          questions: questions.trim(),
+          questions: formattedQuestions,
           max_marks: Number(maxMarks) || 100,
           due_date: dueDate ? new Date(dueDate).toISOString() : null,
           allow_late_submission: allowLateSubmission !== false,
