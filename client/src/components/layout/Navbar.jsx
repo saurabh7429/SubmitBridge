@@ -18,7 +18,6 @@ export function Navbar() {
   return (
     <header className="navbar">
       <div className="navbar__inner">
-        {/* Left: Brand Logo & Institution */}
         <Link to="/dashboard" className="navbar__brand" title="SubmitBridge Home">
           <div className="navbar__logo-icon">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -38,7 +37,6 @@ export function Navbar() {
           </div>
         </Link>
 
-        {/* Center: Persistent Tab Navigation */}
         <nav className="navbar__nav-links">
           <Link
             to="/dashboard"
@@ -66,7 +64,6 @@ export function Navbar() {
           </Link>
         </nav>
 
-        {/* Right: Teacher Profile & Logout */}
         <div className="navbar__right">
           {teacher?.name && (
             <div className="teacher-pill" title={`Logged in as ${teacher.name}`}>

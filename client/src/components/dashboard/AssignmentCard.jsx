@@ -26,13 +26,6 @@ export function AssignmentCard({ assignment, onDelete, onRestore, isActionLoadin
         </div>
 
         <div className="assignment-card__actions">
-          <Badge variant="emerald" title="Total student submissions">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <polyline points="20 6 9 17 4 12"/>
-            </svg>
-            <span>{assignment.submissionCount || 0} Submissions</span>
-          </Badge>
-
           {!isDeleted ? (
             <button
               type="button"
@@ -74,6 +67,11 @@ export function AssignmentCard({ assignment, onDelete, onRestore, isActionLoadin
         {assignment.title}
       </h3>
 
+      <div className="assignment-card__summary">
+        <span>{assignment.subject}{assignment.subject_code ? ` · ${assignment.subject_code}` : ''}</span>
+        <span>{assignment.department || 'All departments'}</span>
+      </div>
+
       {/* Meta details */}
       <div className="assignment-card__meta">
         <div className="meta-pill">
@@ -84,6 +82,13 @@ export function AssignmentCard({ assignment, onDelete, onRestore, isActionLoadin
         <div className="meta-pill">
           <span className="meta-pill__label">Status</span>
           <StatusPill isDeleted={isDeleted} isOverdue={overdue} />
+        </div>
+
+        <div className="meta-pill">
+          <span className="meta-pill__label">Submissions</span>
+          <span className="meta-pill__value meta-pill__value--accent">
+            {assignment.submissionCount || 0} received
+          </span>
         </div>
 
         <div className="meta-pill meta-pill--full">

@@ -75,11 +75,6 @@ function Dashboard() {
 
   const activeAssignments = assignments.filter((a) => !a.is_deleted);
   const trashAssignments = assignments.filter((a) => a.is_deleted);
-  const totalSubmissions = assignments.reduce(
-    (acc, a) => acc + (Number(a.submissionCount) || 0),
-    0
-  );
-
   const displayed = activeTab === 'active' ? activeAssignments : trashAssignments;
 
   return (
@@ -90,7 +85,6 @@ function Dashboard() {
       {/* ── Quick Stat Widgets ── */}
       <StatsGrid
         activeCount={activeAssignments.length}
-        totalSubmissions={totalSubmissions}
         trashCount={trashAssignments.length}
       />
 

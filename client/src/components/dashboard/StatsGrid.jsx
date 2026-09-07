@@ -1,6 +1,6 @@
 import React from 'react';
 
-export function StatsGrid({ activeCount = 0, totalSubmissions = 0, trashCount = 0 }) {
+export function StatsGrid({ activeCount = 0, trashCount = 0 }) {
   return (
     <div className="stats-grid">
       <div className="stat-card stat-card--indigo">
@@ -16,31 +16,11 @@ export function StatsGrid({ activeCount = 0, totalSubmissions = 0, trashCount = 
         </div>
         <div className="stat-card__data">
           <span className="stat-card__value">{activeCount}</span>
-          <span className="stat-card__label">Active Assignments</span>
+          <span className="stat-card__label">Total Assignments</span>
         </div>
         <div className="stat-card__footer-hint">
           <span className="pulsing-dot pulsing-dot--green" />
-          <span>Accepting submissions</span>
-        </div>
-      </div>
-
-      <div className="stat-card stat-card--emerald">
-        <div className="stat-card__top">
-          <div className="stat-card__icon stat-card__icon--emerald">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-              <polyline points="17 8 12 3 7 8"/>
-              <line x1="12" y1="3" x2="12" y2="15"/>
-            </svg>
-          </div>
-          <span className="stat-card__badge stat-card__badge--emerald">Verified</span>
-        </div>
-        <div className="stat-card__data">
-          <span className="stat-card__value">{totalSubmissions}</span>
-          <span className="stat-card__label">Student Submissions</span>
-        </div>
-        <div className="stat-card__footer-hint">
-          <span>⚡ AI scanned & ready</span>
+          <span>Ready to receive submissions</span>
         </div>
       </div>
 
