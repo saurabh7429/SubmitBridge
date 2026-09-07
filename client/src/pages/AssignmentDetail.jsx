@@ -86,7 +86,7 @@ function AssignmentDetail() {
 
   if (loading && !data) {
     return (
-      <div className="page-container">
+      <div className="sb-detail-view">
         <BackButton />
         <DetailSkeleton />
       </div>
@@ -95,13 +95,13 @@ function AssignmentDetail() {
 
   if (error || !data) {
     return (
-      <div className="page-container">
+      <div className="sb-detail-view">
         <EmptyState
           icon="⚠️"
           title={error || 'Assignment not found'}
-          description="The assignment may have been permanently removed or the link is invalid."
+          description="The assignment may have been permanently deleted or the link is invalid."
           action={
-            <Link to="/dashboard" className="btn btn-primary">
+            <Link to="/dashboard" className="sb-btn sb-btn-primary">
               ← Back to Dashboard
             </Link>
           }
@@ -117,12 +117,11 @@ function AssignmentDetail() {
     `${window.location.origin}/submit/${id}`;
 
   return (
-    <div className="page-container">
-      {/* ── Breadcrumb Navigation ── */}
+    <div className="sb-detail-view">
       <BackButton to="/dashboard" label="Back to Dashboard" />
 
-      {/* ── Detail Hero Grid ── */}
-      <div className="detail-hero-grid">
+      {/* Hero Layout */}
+      <div className="sb-detail-hero-layout">
         <AssignmentHeaderCard
           assignment={assignment}
           submissionCount={submissions.length}
@@ -130,7 +129,7 @@ function AssignmentDetail() {
         <AssignmentQrCard qrCode={qrCode} shareLink={shareLink} />
       </div>
 
-      {/* ── Submissions Table ── */}
+      {/* Submissions Table */}
       <SubmissionsTable
         submissions={submissions}
         maxMarks={assignment.max_marks}
@@ -142,7 +141,7 @@ function AssignmentDetail() {
         onOpenSummary={setSelectedSummarySub}
       />
 
-      {/* ── AI Summary Modal ── */}
+      {/* AI Summary Modal */}
       <AISummaryModal
         submission={selectedSummarySub}
         maxMarks={assignment.max_marks}

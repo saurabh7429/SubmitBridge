@@ -80,154 +80,152 @@ function CreateAssignment() {
   };
 
   return (
-    <div className="page-container">
+    <div className="sb-create-assignment-page">
       <BackButton to="/dashboard" label="Back to Dashboard" />
 
       {!createdResult ? (
-        <div className="create-container">
-          <div className="create-card card-neumorphic">
-            <div className="create-card__header">
-              <div className="create-card__icon">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 20h9"/>
-                  <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
-                </svg>
-              </div>
-              <div>
-                <h1 className="create-card__title">Create New Assignment</h1>
-                <p className="create-card__subtitle">
-                  Define questions, constraints, and due dates. An instant submission QR code will be generated.
-                </p>
-              </div>
+        <div className="sb-card sb-create-card">
+          <div className="sb-create-header">
+            <div className="sb-create-icon-badge">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 20h9" />
+                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+              </svg>
             </div>
+            <div>
+              <h1 className="sb-create-title">Create New Assignment</h1>
+              <p className="sb-create-subtitle">
+                Define questions, guidelines, and deadlines. A submission QR code and link will be generated.
+              </p>
+            </div>
+          </div>
 
-            {error && <div className="alert alert-error">{error}</div>}
+          {error && <div className="sb-alert sb-alert--error">{error}</div>}
 
-            <form onSubmit={handleSubmit} className="form-grid">
-              <div className="form-row form-row--2col">
-                <FormField label="Institution / College Name" required>
-                  <input
-                    type="text"
-                    className="form-input"
-                    value={collegeName}
-                    onChange={(e) => setCollegeName(e.target.value)}
-                    required
-                    placeholder="e.g. Udhna Citizen College"
-                  />
-                </FormField>
-
-                <FormField label="Department / Stream (Optional)">
-                  <input
-                    type="text"
-                    className="form-input"
-                    value={department}
-                    onChange={(e) => setDepartment(e.target.value)}
-                    placeholder="e.g. Computer Science & Engineering"
-                  />
-                </FormField>
-              </div>
-
-              <div className="form-row form-row--2col">
-                <FormField label="Subject Name" required>
-                  <input
-                    type="text"
-                    className="form-input"
-                    value={subject}
-                    onChange={(e) => setSubject(e.target.value)}
-                    required
-                    placeholder="e.g. Operating Systems"
-                  />
-                </FormField>
-
-                <FormField label="Subject Code (Optional)">
-                  <input
-                    type="text"
-                    className="form-input"
-                    value={subjectCode}
-                    onChange={(e) => setSubjectCode(e.target.value)}
-                    placeholder="e.g. CS-402"
-                  />
-                </FormField>
-              </div>
-
-              <FormField label="Assignment Title" required>
+          <form onSubmit={handleSubmit} className="sb-create-form">
+            <div className="sb-form-row-2col">
+              <FormField label="Institution / College Name" required>
                 <input
                   type="text"
-                  className="form-input"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
+                  className="sb-input"
+                  value={collegeName}
+                  onChange={(e) => setCollegeName(e.target.value)}
                   required
-                  placeholder="e.g. Assignment 2 — CPU Scheduling & Process Synchronization"
+                  placeholder="e.g. Udhna Citizen College"
                 />
               </FormField>
 
-              <div className="form-row form-row--2col">
-                <FormField label="Submission Instructions & Guidelines (Optional)">
-                  <textarea
-                    className="form-textarea"
-                    rows={6}
-                    value={instructions}
-                    onChange={(e) => setInstructions(e.target.value)}
-                    placeholder="e.g. Provide step-by-step Gantt charts. Maintain academic integrity. Hand-written or typed accepted."
-                  />
-                </FormField>
+              <FormField label="Department / Stream (Optional)">
+                <input
+                  type="text"
+                  className="sb-input"
+                  value={department}
+                  onChange={(e) => setDepartment(e.target.value)}
+                  placeholder="e.g. Computer Science & Engineering"
+                />
+              </FormField>
+            </div>
 
-                <FormField label="Assignment Questions / Problem Statements" required>
-                  <textarea
-                    className="form-textarea"
-                    rows={6}
-                    value={questions}
-                    onChange={(e) => setQuestions(e.target.value)}
-                    required
-                    placeholder="1. Compare Preemptive and Non-Preemptive scheduling algorithms.&#10;2. Solve the following Round Robin problem with Quantum = 2ms..."
-                  />
-                </FormField>
-              </div>
+            <div className="sb-form-row-2col">
+              <FormField label="Subject Name" required>
+                <input
+                  type="text"
+                  className="sb-input"
+                  value={subject}
+                  onChange={(e) => setSubject(e.target.value)}
+                  required
+                  placeholder="e.g. Operating Systems"
+                />
+              </FormField>
 
-              <div className="form-row form-row--2col">
-                <FormField label="Maximum Marks" required>
-                  <input
-                    type="number"
-                    min={1}
-                    max={1000}
-                    className="form-input"
-                    value={maxMarks}
-                    onChange={(e) => setMaxMarks(e.target.value)}
-                    required
-                  />
-                </FormField>
+              <FormField label="Subject Code (Optional)">
+                <input
+                  type="text"
+                  className="sb-input"
+                  value={subjectCode}
+                  onChange={(e) => setSubjectCode(e.target.value)}
+                  placeholder="e.g. CS-402"
+                />
+              </FormField>
+            </div>
 
-                <FormField
-                  label="Due Date & Time (Optional)"
-                  hint="🔒 Submissions automatically close once deadline expires."
-                >
-                  <input
-                    type="datetime-local"
-                    className="form-input"
-                    value={dueDate}
-                    onChange={(e) => setDueDate(e.target.value)}
-                  />
-                </FormField>
-              </div>
-
-              <FileTypeSelector
-                allowPdf={allowPdf}
-                setAllowPdf={setAllowPdf}
-                allowDocx={allowDocx}
-                setAllowDocx={setAllowDocx}
+            <FormField label="Assignment Title" required>
+              <input
+                type="text"
+                className="sb-input"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                required
+                placeholder="e.g. Assignment 2 — CPU Scheduling & Process Synchronization"
               />
+            </FormField>
 
-              <div className="form-submit-row">
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="btn btn-primary btn-glow btn--lg"
-                >
-                  {loading ? 'Generating Portal & QR...' : 'Create Assignment & Generate QR →'}
-                </button>
-              </div>
-            </form>
-          </div>
+            <div className="sb-form-row-2col">
+              <FormField label="Submission Guidelines & Instructions (Optional)">
+                <textarea
+                  className="sb-textarea"
+                  rows={6}
+                  value={instructions}
+                  onChange={(e) => setInstructions(e.target.value)}
+                  placeholder="e.g. Maintain academic integrity. Include Gantt charts where appropriate."
+                />
+              </FormField>
+
+              <FormField label="Assignment Questions / Problems" required>
+                <textarea
+                  className="sb-textarea"
+                  rows={6}
+                  value={questions}
+                  onChange={(e) => setQuestions(e.target.value)}
+                  required
+                  placeholder="1. Compare Preemptive and Non-Preemptive scheduling algorithms.&#10;2. Solve Round Robin with Quantum = 2ms..."
+                />
+              </FormField>
+            </div>
+
+            <div className="sb-form-row-2col">
+              <FormField label="Maximum Marks" required>
+                <input
+                  type="number"
+                  min={1}
+                  max={1000}
+                  className="sb-input"
+                  value={maxMarks}
+                  onChange={(e) => setMaxMarks(e.target.value)}
+                  required
+                />
+              </FormField>
+
+              <FormField
+                label="Due Date & Time (Optional)"
+                hint="🔒 Submissions automatically close once deadline expires."
+              >
+                <input
+                  type="datetime-local"
+                  className="sb-input"
+                  value={dueDate}
+                  onChange={(e) => setDueDate(e.target.value)}
+                />
+              </FormField>
+            </div>
+
+            <FileTypeSelector
+              allowPdf={allowPdf}
+              setAllowPdf={setAllowPdf}
+              allowDocx={allowDocx}
+              setAllowDocx={setAllowDocx}
+            />
+
+            <div className="sb-form-submit-row">
+              <button
+                type="submit"
+                disabled={loading}
+                className="sb-btn sb-btn-primary sb-btn--lg"
+              >
+                {loading ? 'Generating Portal & QR...' : 'Create Assignment & Generate QR →'}
+              </button>
+            </div>
+          </form>
         </div>
       ) : (
         <CreateAssignmentSuccess result={createdResult} onReset={handleReset} />

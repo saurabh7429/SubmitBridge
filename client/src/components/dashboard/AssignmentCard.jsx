@@ -11,33 +11,31 @@ export function AssignmentCard({ assignment, onDelete, onRestore, isActionLoadin
   const studentLink = `${window.location.origin}/submit/${assignment.id}`;
 
   return (
-    <div className={`assignment-card ${isDeleted ? 'assignment-card--deleted' : ''}`}>
-      {/* Top decorative accent bar */}
-      <div className="assignment-card__bar" />
+    <div className={`sb-assignment-card ${isDeleted ? 'sb-assignment-card--deleted' : ''}`}>
+      <div className="sb-assignment-card-accent" />
 
-      {/* Card Header */}
-      <div className="assignment-card__header">
-        <div className="assignment-card__badges">
+      <div className="sb-assignment-card-header">
+        <div className="sb-assignment-card-badges">
           <Badge variant="indigo">
             {assignment.subject}
             {assignment.subject_code ? ` • ${assignment.subject_code}` : ''}
           </Badge>
-          {assignment.department && <Badge variant="gray">{assignment.department}</Badge>}
+          {assignment.department && <Badge variant="slate">{assignment.department}</Badge>}
         </div>
 
-        <div className="assignment-card__actions">
+        <div className="sb-assignment-card-controls">
           {!isDeleted ? (
             <button
               type="button"
               onClick={() => onDelete(assignment.id, assignment.title)}
               disabled={isActionLoading}
-              title="Move to Trash (Recoverable for 3 days)"
-              className="btn-icon-danger"
+              title="Move to Trash"
+              className="sb-btn-icon-danger"
               aria-label="Delete Assignment"
             >
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <polyline points="3 6 5 6 21 6"/>
-                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                <polyline points="3 6 5 6 21 6" />
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
               </svg>
             </button>
           ) : (
@@ -46,7 +44,7 @@ export function AssignmentCard({ assignment, onDelete, onRestore, isActionLoadin
               onClick={() => onRestore(assignment.id)}
               disabled={isActionLoading}
               title="Restore assignment"
-              className="btn btn-success btn--sm"
+              className="sb-btn sb-btn-success sb-btn--sm"
             >
               {isActionLoading ? '…' : '♻️ Restore'}
             </button>
@@ -54,63 +52,60 @@ export function AssignmentCard({ assignment, onDelete, onRestore, isActionLoadin
         </div>
       </div>
 
-      {/* Trash Banner */}
       {isDeleted && (
-        <div className="trash-banner">
-          <span className="trash-banner__warning">⚠️ In Trash — Submissions Closed</span>
-          <span className="trash-banner__time">⏳ {getDaysRemaining(assignment.deleted_at)}</span>
+        <div className="sb-trash-banner">
+          <span>⚠️ In Trash — Submissions Closed</span>
+          <span>⏳ {getDaysRemaining(assignment.deleted_at)}</span>
         </div>
       )}
 
-      {/* Assignment Title */}
-      <h3 className="assignment-card__title" title={assignment.title}>
+      <h3 className="sb-assignment-card-title" title={assignment.title}>
         {assignment.title}
       </h3>
 
-      <div className="assignment-card__summary">
+      <div className="sb-assignment-card-sub">
         <span>{assignment.subject}{assignment.subject_code ? ` · ${assignment.subject_code}` : ''}</span>
         <span>{assignment.department || 'All departments'}</span>
       </div>
 
-      {/* Meta details: 2x2 grid */}
-      <div className="assignment-card__meta">
-        <div className="meta-pill">
-          <span className="meta-pill__label">Max Marks</span>
-          <span className="meta-pill__value">{assignment.max_marks} pts</span>
+      <div className="sb-assignment-meta-grid">
+        <div className="sb-meta-box">
+          <span className="sb-meta-label">Max Marks</span>
+          <span className="sb-meta-value">{assignment.max_marks} pts</span>
         </div>
 
-        <div className="meta-pill">
-          <span className="meta-pill__label">Submissions</span>
-          <span className="meta-pill__value meta-pill__value--accent">
+        <div className="sb-meta-box">
+          <span className="sb-meta-label">Submissions</span>
+          <span className="sb-meta-value sb-text-indigo">
             {assignment.submissionCount || 0} received
           </span>
         </div>
 
-        <div className="meta-pill">
-          <span className="meta-pill__label">Due Date</span>
-          <span className={`meta-pill__value ${overdue ? 'text-danger' : ''}`}>
-            {assignment.due_date ? formatDateTime(assignment.due_date) : 'No deadline set'}
+        <div className="sb-meta-box">
+          <span className="sb-meta-label">Due Date</span>
+          <span className={`sb-meta-value ${overdue ? 'sb-text-danger' : ''}`}>
+            {assignment.due_date ? formatDateTime(assignment.due_date) : 'No deadline'}
           </span>
         </div>
 
-        <div className="meta-pill">
-          <span className="meta-pill__label">Status</span>
+        <div className="sb-meta-box">
+          <span className="sb-meta-label">Status</span>
           <StatusPill isDeleted={isDeleted} isOverdue={overdue} />
         </div>
       </div>
 
-      {/* Card Footer Actions */}
-      <div className="assignment-card__footer">
+      <div className="sb-assignment-card-footer">
         {!isDeleted ? (
-          <div className="assignment-card__btn-row">
+          <div className="sb-card-btn-row">
             <Link
               to={`/assignment/${assignment.id}`}
-              className="btn btn-primary btn-card-primary"
+              className="sb-btn sb-btn-primary sb-btn--md"
+              style={{ flex: 1, justifyContent: 'center' }}
             >
               <span>View Submissions</span>
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="5" y1="12" x2="19" y2="12"/>
-                <polyline points="12 5 19 12 12 19"/>
+                <line x1="5" y1="12" x2="19" y2="12" />
+                <polyline points="12 5 19 12 12 19" />
               </svg>
             </Link>
 
@@ -118,24 +113,23 @@ export function AssignmentCard({ assignment, onDelete, onRestore, isActionLoadin
               text={studentLink}
               label="Copy Link"
               copiedLabel="Copied"
-              className="btn-card-share"
             />
           </div>
         ) : (
-          <div className="card-actions-dual">
+          <div className="sb-card-btn-row">
             <button
               type="button"
               onClick={() => onRestore(assignment.id)}
               disabled={isActionLoading}
-              className="btn btn-success"
-              style={{ flex: 1 }}
+              className="sb-btn sb-btn-success sb-btn--md"
+              style={{ flex: 1, justifyContent: 'center' }}
             >
               {isActionLoading ? 'Restoring...' : '♻️ Restore'}
             </button>
             <Link
               to={`/assignment/${assignment.id}`}
-              className="btn btn-secondary"
-              style={{ flex: 1, textAlign: 'center' }}
+              className="sb-btn sb-btn-secondary sb-btn--md"
+              style={{ flex: 1, justifyContent: 'center' }}
             >
               View Details
             </Link>

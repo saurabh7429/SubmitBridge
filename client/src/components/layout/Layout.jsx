@@ -4,10 +4,12 @@ import Navbar from './Navbar';
 
 export function Layout() {
   return (
-    <div className="app-shell">
+    <div className="sb-app-layout">
       <Navbar />
-      <main className="main-content">
-        <div className="content-frame"><Outlet /></div>
+      <main className="sb-main-viewport">
+        <div className="sb-page-container">
+          <Outlet />
+        </div>
       </main>
     </div>
   );

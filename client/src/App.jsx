@@ -57,6 +57,7 @@ function AppRoutes() {
       >
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/create" element={<CreateAssignment />} />
+        <Route path="/create-assignment" element={<CreateAssignment />} />
         <Route path="/assignment/:id" element={<AssignmentDetail />} />
       </Route>
 

@@ -1,9 +1,8 @@
 import React from 'react';
 
-export function Badge({ children, variant = 'gray', className = '', title = '' }) {
-  const variantClass = `badge-${variant}`;
+export function Badge({ children, variant = 'slate', className = '', title = '' }) {
   return (
-    <span className={`badge ${variantClass} ${className}`} title={title}>
+    <span className={`sb-badge sb-badge--${variant} ${className}`} title={title}>
       {children}
     </span>
   );

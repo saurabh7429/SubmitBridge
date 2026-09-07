@@ -9,15 +9,15 @@ export function FormField({
   className = '',
 }) {
   return (
-    <div className={`form-group ${className}`}>
+    <div className={`sb-form-group ${className}`}>
       {label && (
-        <label className="form-label">
-          {label} {required && <span className="text-danger">*</span>}
+        <label className="sb-form-label">
+          {label} {required && <span className="sb-text-danger">*</span>}
         </label>
       )}
       {children}
-      {hint && <span className="field-hint">{hint}</span>}
-      {error && <span className="file-error-text">{error}</span>}
+      {hint && <span className="sb-form-hint">{hint}</span>}
+      {error && <span className="sb-form-error">{error}</span>}
     </div>
   );
 }

@@ -4,24 +4,24 @@ export function Modal({ isOpen, onClose, title, subtitle, icon = '🤖', childre
   if (!isOpen) return null;
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-card card-neumorphic" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-card__header">
-          <div className="modal-card__title">
-            {icon && <span className="modal-icon">{icon}</span>}
+    <div className="sb-modal-backdrop" onClick={onClose}>
+      <div className="sb-modal-dialog" onClick={(e) => e.stopPropagation()}>
+        <div className="sb-modal-header">
+          <div className="sb-modal-heading-group">
+            {icon && <span className="sb-modal-icon">{icon}</span>}
             <div>
-              {title && <h3 style={{ fontSize: 17, fontWeight: 700 }}>{title}</h3>}
-              {subtitle && <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>{subtitle}</p>}
+              {title && <h3 className="sb-modal-title">{title}</h3>}
+              {subtitle && <p className="sb-modal-subtitle">{subtitle}</p>}
             </div>
           </div>
-          <button type="button" onClick={onClose} className="modal-close-btn" aria-label="Close">
-            ×
+          <button type="button" onClick={onClose} className="sb-modal-close" aria-label="Close modal">
+            ✕
           </button>
         </div>
 
-        <div className="modal-card__body">{children}</div>
+        <div className="sb-modal-body">{children}</div>
 
-        {footer && <div className="modal-card__footer">{footer}</div>}
+        {footer && <div className="sb-modal-footer">{footer}</div>}
       </div>
     </div>
   );

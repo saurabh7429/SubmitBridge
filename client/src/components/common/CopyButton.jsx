@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-export function CopyButton({ text, label = 'Copy Link', copiedLabel = 'Copied to Clipboard!', className = '' }) {
+export function CopyButton({ text, label = 'Copy Link', copiedLabel = 'Copied!', className = '' }) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = () => {
@@ -41,7 +41,7 @@ export function CopyButton({ text, label = 'Copy Link', copiedLabel = 'Copied to
     <button
       type="button"
       onClick={handleCopy}
-      className={`btn-copy-link ${copied ? 'btn-copy-link--copied' : ''} ${className}`}
+      className={`sb-btn sb-btn-copy ${copied ? 'sb-btn-copy--copied' : ''} ${className}`}
       title="Copy to clipboard"
     >
       {copied ? (

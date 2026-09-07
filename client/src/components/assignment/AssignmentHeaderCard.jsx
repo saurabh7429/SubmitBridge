@@ -8,73 +8,71 @@ export function AssignmentHeaderCard({ assignment, submissionCount = 0 }) {
   const isDeleted = Boolean(assignment.is_deleted);
 
   return (
-    <div className="detail-card-main card-neumorphic">
-      <div className="detail-card-main__header">
-        <div className="badge-group">
+    <div className="sb-card sb-detail-main-card">
+      <div className="sb-detail-card-top">
+        <div className="sb-badge-row">
           <Badge variant="indigo">
             {assignment.subject}
             {assignment.subject_code ? ` • ${assignment.subject_code}` : ''}
           </Badge>
-          {assignment.department && <Badge variant="gray">{assignment.department}</Badge>}
+          {assignment.department && <Badge variant="slate">{assignment.department}</Badge>}
           {assignment.college_name && <Badge variant="college">{assignment.college_name}</Badge>}
         </div>
 
-        <div className="status-indicator-box">
+        <div className="sb-status-box">
           <StatusPill isDeleted={isDeleted} isOverdue={deadlinePassed} />
         </div>
       </div>
 
-      <h1 className="detail-card-main__title">{assignment.title}</h1>
+      <h1 className="sb-detail-title">{assignment.title}</h1>
 
-      <div className="detail-stats-row">
-        <div className="detail-stat">
-          <span className="detail-stat__label">Max Marks</span>
-          <span className="detail-stat__value">{assignment.max_marks} pts</span>
+      <div className="sb-detail-stats-grid">
+        <div className="sb-detail-stat-item">
+          <span className="sb-detail-stat-label">Max Marks</span>
+          <span className="sb-detail-stat-value">{assignment.max_marks} pts</span>
         </div>
-        <div className="detail-stat">
-          <span className="detail-stat__label">Created</span>
-          <span className="detail-stat__value">{formatDate(assignment.created_at)}</span>
+        <div className="sb-detail-stat-item">
+          <span className="sb-detail-stat-label">Created Date</span>
+          <span className="sb-detail-stat-value">{formatDate(assignment.created_at)}</span>
         </div>
         {assignment.due_date && (
-          <div className="detail-stat">
-            <span className="detail-stat__label">Due Deadline</span>
-            <span className={`detail-stat__value ${deadlinePassed ? 'text-danger' : ''}`}>
+          <div className="sb-detail-stat-item">
+            <span className="sb-detail-stat-label">Due Deadline</span>
+            <span className={`sb-detail-stat-value ${deadlinePassed ? 'sb-text-danger' : ''}`}>
               {formatDateTime(assignment.due_date)}
             </span>
           </div>
         )}
-        <div className="detail-stat">
-          <span className="detail-stat__label">Submissions</span>
-          <span className="detail-stat__value text-indigo">{submissionCount}</span>
+        <div className="sb-detail-stat-item">
+          <span className="sb-detail-stat-label">Submissions</span>
+          <span className="sb-detail-stat-value sb-text-indigo">{submissionCount}</span>
         </div>
       </div>
 
-      {/* Submission Instructions */}
       {assignment.instructions && (
-        <div className="info-box info-box--neutral">
-          <div className="info-box__title">
+        <div className="sb-info-card sb-info-card--neutral">
+          <div className="sb-info-card-header">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <circle cx="12" cy="12" r="10"/>
-              <line x1="12" y1="16" x2="12" y2="12"/>
-              <line x1="12" y1="8" x2="12.01" y2="8"/>
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="16" x2="12" y2="12" />
+              <line x1="12" y1="8" x2="12.01" y2="8" />
             </svg>
             <span>Submission Guidelines</span>
           </div>
-          <p className="info-box__content">{assignment.instructions}</p>
+          <p className="sb-info-card-text">{assignment.instructions}</p>
         </div>
       )}
 
-      {/* Problem Statements */}
       {assignment.questions && (
-        <div className="info-box info-box--primary">
-          <div className="info-box__title">
+        <div className="sb-info-card sb-info-card--primary">
+          <div className="sb-info-card-header">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
-              <line x1="12" y1="17" x2="12.01" y2="17"/>
+              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+              <line x1="12" y1="17" x2="12.01" y2="17" />
             </svg>
             <span>Questions / Problem Statements</span>
           </div>
-          <p className="info-box__content whitespace-pre-line">{assignment.questions}</p>
+          <p className="sb-info-card-text sb-pre-line">{assignment.questions}</p>
         </div>
       )}
     </div>

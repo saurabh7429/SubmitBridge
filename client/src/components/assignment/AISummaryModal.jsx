@@ -12,29 +12,29 @@ export function AISummaryModal({ submission, maxMarks, onClose }) {
       subtitle={`${submission.student_name} (${submission.roll_number})`}
       icon="🤖"
       footer={
-        <button type="button" onClick={onClose} className="btn btn-secondary btn--full">
+        <button type="button" onClick={onClose} className="sb-btn sb-btn-secondary sb-btn--block">
           Close Report
         </button>
       }
     >
-      <div className="modal-score-banner">
-        <span className="modal-score-label">Estimated AI Score</span>
-        <span className="modal-score-number">
-          {submission.ai_estimated_marks} <span style={{ fontSize: 16, color: 'var(--text-muted)' }}>/ {maxMarks}</span>
+      <div className="sb-modal-score-card">
+        <span className="sb-modal-score-label">Estimated AI Score</span>
+        <span className="sb-modal-score-val">
+          {submission.ai_estimated_marks} <span className="sb-modal-score-max">/ {maxMarks}</span>
         </span>
       </div>
 
-      <div className="modal-section">
-        <span className="modal-section__heading">Submission Summary</span>
-        <div className="modal-text-block">
+      <div className="sb-modal-section">
+        <span className="sb-modal-section-title">Submission Summary</span>
+        <div className="sb-modal-text-content">
           {submission.ai_summary || 'No summary provided by AI evaluator.'}
         </div>
       </div>
 
       {submission.ai_reasoning && (
-        <div className="modal-section">
-          <span className="modal-section__heading">Marking Justification & Rationale</span>
-          <div className="modal-text-block modal-text-block--highlight">
+        <div className="sb-modal-section">
+          <span className="sb-modal-section-title">Marking Justification & Rationale</span>
+          <div className="sb-modal-text-content sb-modal-text-content--highlight">
             {submission.ai_reasoning}
           </div>
         </div>

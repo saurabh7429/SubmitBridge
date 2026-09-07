@@ -29,31 +29,31 @@ function Login() {
   };
 
   return (
-    <div className="auth-canvas page-enter">
-      <div className="auth-card card-neumorphic">
-        <div className="auth-header">
-          <div className="auth-logo-badge">
+    <div className="sb-auth-page">
+      <div className="sb-card sb-auth-card">
+        <div className="sb-auth-header">
+          <div className="sb-auth-logo-badge">
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
-              <path d="M6 12v5c3 3 9 3 12 0v-5"/>
+              <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
+              <path d="M6 12v5c3 3 9 3 12 0v-5" />
             </svg>
           </div>
-          <h1 className="auth-title">
-            Submit<span className="brand-gradient">Bridge</span>
+          <h1 className="sb-auth-title">
+            Submit<span className="sb-brand-accent">Bridge</span>
           </h1>
-          <p className="auth-subtitle">AI-Powered Faculty Evaluation & Submission Suite</p>
+          <p className="sb-auth-subtitle">AI-Powered Faculty Evaluation & Submission Suite</p>
         </div>
 
-        <div className="auth-pill-tag">Faculty Portal Sign In</div>
+        <div className="sb-auth-pill-tag">Faculty Portal Sign In</div>
 
-        {error && <div className="alert alert-error">{error}</div>}
+        {error && <div className="sb-alert sb-alert--error">{error}</div>}
 
-        <form onSubmit={handleSubmit} className="auth-form">
-          <div className="form-group">
-            <label className="form-label">College Email Address</label>
+        <form onSubmit={handleSubmit} className="sb-auth-form">
+          <div className="sb-form-group">
+            <label className="sb-form-label">College Email Address</label>
             <input
               type="email"
-              className="form-input"
+              className="sb-input"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -62,11 +62,11 @@ function Login() {
             />
           </div>
 
-          <div className="form-group">
-            <label className="form-label">Password</label>
+          <div className="sb-form-group">
+            <label className="sb-form-label">Password</label>
             <input
               type="password"
-              className="form-input"
+              className="sb-input"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
@@ -78,15 +78,15 @@ function Login() {
           <button
             type="submit"
             disabled={loading}
-            className="btn btn-primary btn-glow btn--full btn--lg"
+            className="sb-btn sb-btn-primary sb-btn--lg sb-btn--block"
           >
             {loading ? "Authenticating..." : "Sign In to Dashboard →"}
           </button>
         </form>
 
-        <div className="auth-footer">
+        <div className="sb-auth-footer">
           <span>Don't have an account yet? </span>
-          <Link to="/register" className="auth-link">
+          <Link to="/register" className="sb-auth-link">
             Register Faculty Account
           </Link>
         </div>

@@ -2,32 +2,32 @@ import React from 'react';
 
 export function FileTypeSelector({ allowPdf, setAllowPdf, allowDocx, setAllowDocx }) {
   return (
-    <div className="form-group">
-      <label className="form-label">Accepted Document Formats</label>
-      <div className="format-selection-row">
-        <label className={`format-pill-box ${allowPdf ? 'active' : ''}`}>
+    <div className="sb-form-group">
+      <label className="sb-form-label">Accepted Document Formats</label>
+      <div className="sb-filetypes-grid">
+        <label className={`sb-filetype-card ${allowPdf ? 'sb-filetype-card--active' : ''}`}>
           <input
             type="checkbox"
             checked={allowPdf}
             onChange={(e) => setAllowPdf(e.target.checked)}
           />
-          <span className="format-pill-box__icon">📄</span>
-          <div>
+          <span className="sb-filetype-icon">📄</span>
+          <div className="sb-filetype-text">
             <strong>PDF Document (.pdf)</strong>
-            <p>Standard document format for all devices</p>
+            <p>Standard format for documents on all operating systems</p>
           </div>
         </label>
 
-        <label className={`format-pill-box ${allowDocx ? 'active' : ''}`}>
+        <label className={`sb-filetype-card ${allowDocx ? 'sb-filetype-card--active' : ''}`}>
           <input
             type="checkbox"
             checked={allowDocx}
             onChange={(e) => setAllowDocx(e.target.checked)}
           />
-          <span className="format-pill-box__icon">📝</span>
-          <div>
+          <span className="sb-filetype-icon">📝</span>
+          <div className="sb-filetype-text">
             <strong>Word Document (.docx)</strong>
-            <p>Microsoft Word document format</p>
+            <p>Standard Microsoft Word document format</p>
           </div>
         </label>
       </div>

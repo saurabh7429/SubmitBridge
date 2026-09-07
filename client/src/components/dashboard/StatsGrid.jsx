@@ -2,44 +2,44 @@ import React from 'react';
 
 export function StatsGrid({ activeCount = 0, trashCount = 0 }) {
   return (
-    <div className="stats-grid">
-      <div className="stat-card stat-card--indigo">
-        <div className="stat-card__top">
-          <div className="stat-card__icon stat-card__icon--indigo">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/>
-              <path d="M6 6h10"/>
-              <path d="M6 10h10"/>
+    <div className="sb-stats-grid">
+      <div className="sb-stat-card sb-stat-card--indigo">
+        <div className="sb-stat-header">
+          <div className="sb-stat-icon-wrapper sb-stat-icon-wrapper--indigo">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z" />
+              <path d="M6 6h10" />
+              <path d="M6 10h10" />
             </svg>
           </div>
-          <span className="stat-card__badge stat-card__badge--indigo">Live</span>
+          <span className="sb-badge sb-badge--indigo">Active</span>
         </div>
-        <div className="stat-card__data">
-          <span className="stat-card__value">{activeCount}</span>
-          <span className="stat-card__label">Active Assignments</span>
+        <div className="sb-stat-body">
+          <span className="sb-stat-value">{activeCount}</span>
+          <span className="sb-stat-label">Active Assignments</span>
         </div>
-        <div className="stat-card__footer-hint">
-          <span className="pulsing-dot pulsing-dot--green" />
-          <span>Ready to receive submissions</span>
+        <div className="sb-stat-footer">
+          <span className="sb-pulsing-dot sb-pulsing-dot--green" />
+          <span>Accepting submissions from students</span>
         </div>
       </div>
 
-      <div className="stat-card stat-card--amber">
-        <div className="stat-card__top">
-          <div className="stat-card__icon stat-card__icon--amber">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="3 6 5 6 21 6"/>
-              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+      <div className="sb-stat-card sb-stat-card--amber">
+        <div className="sb-stat-header">
+          <div className="sb-stat-icon-wrapper sb-stat-icon-wrapper--amber">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="3 6 5 6 21 6" />
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
             </svg>
           </div>
-          <span className="stat-card__badge stat-card__badge--amber">Retention</span>
+          <span className="sb-badge sb-badge--amber">Archive</span>
         </div>
-        <div className="stat-card__data">
-          <span className="stat-card__value">{trashCount}</span>
-          <span className="stat-card__label">In Trash (3-Day Retention)</span>
+        <div className="sb-stat-body">
+          <span className="sb-stat-value">{trashCount}</span>
+          <span className="sb-stat-label">Archived in Trash</span>
         </div>
-        <div className="stat-card__footer-hint">
-          <span>⏳ Auto-purges after 72h</span>
+        <div className="sb-stat-footer">
+          <span>⏳ Retained for 3 days before purge</span>
         </div>
       </div>
     </div>

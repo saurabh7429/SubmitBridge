@@ -78,7 +78,7 @@ function Dashboard() {
   const displayed = activeTab === 'active' ? activeAssignments : trashAssignments;
 
   return (
-    <div className="page-container">
+    <div className="sb-dashboard-view">
       {/* ── Welcome Banner with Metrics ── */}
       <DashboardHero teacherName={teacher?.name} />
 
@@ -96,7 +96,7 @@ function Dashboard() {
         trashCount={trashAssignments.length}
       />
 
-      {error && <div className="alert alert-error">{error}</div>}
+      {error && <div className="sb-alert sb-alert--error">{error}</div>}
 
       {/* ── Content View ── */}
       {!hasLoaded && loading ? (
@@ -107,12 +107,12 @@ function Dashboard() {
           title={activeTab === 'active' ? 'No active assignments yet' : 'Trash is completely empty'}
           description={
             activeTab === 'active'
-              ? 'Create an assignment to instantly get a QR code and shareable link for students.'
+              ? 'Create an assignment to immediately get a QR code and shareable link for students.'
               : 'Assignments moved to trash can be restored within 3 days before permanent deletion.'
           }
           action={
             activeTab === 'active' ? (
-              <Link to="/create" className="btn btn-primary">
+              <Link to="/create" className="sb-btn sb-btn-primary">
                 + Create Your First Assignment
               </Link>
             ) : null
@@ -120,11 +120,11 @@ function Dashboard() {
         />
       ) : (
         <div
-          className={`assignment-grid ${
+          className={`sb-cards-grid ${
             displayed.length === 1
-              ? 'assignment-grid--single'
+              ? 'sb-cards-grid--1col'
               : displayed.length === 2
-              ? 'assignment-grid--2col'
+              ? 'sb-cards-grid--2col'
               : ''
           }`}
         >
