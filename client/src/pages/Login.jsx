@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { loginTeacher, demoFacultyLogin, googleFacultyAuth } from "../api";
+import { loginTeacher, googleFacultyAuth } from "../api";
 import { useAuth } from "../context/AuthContext";
 import { supabase } from "../supabaseClient";
 
@@ -11,7 +11,6 @@ function Login() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [demoLoading, setDemoLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -76,28 +75,6 @@ function Login() {
     }
   };
 
-  const handleDemoSignIn = async () => {
-    setError("");
-    setDemoLoading(true);
-    try {
-      const res = await demoFacultyLogin();
-      login(res.data.token, res.data.teacher);
-      navigate("/dashboard");
-    } catch (err) {
-      setEmail("vikram.nit@edu.in");
-      setPassword("password123");
-      try {
-        const res = await loginTeacher("vikram.nit@edu.in", "password123");
-        login(res.data.token, res.data.teacher);
-        navigate("/dashboard");
-      } catch (fallbackErr) {
-        setError(fallbackErr.response?.data?.message || "Demo sign-in failed.");
-      }
-    } finally {
-      setDemoLoading(false);
-    }
-  };
-
   return (
     <div className="sb-auth-page">
       <div className="sb-card sb-auth-card">
@@ -127,7 +104,7 @@ function Login() {
         <button
           type="button"
           onClick={handleGoogleAuth}
-          disabled={googleLoading || loading || demoLoading}
+          disabled={googleLoading || loading}
           className="sb-btn sb-btn-google sb-btn--block"
         >
           <svg width="18" height="18" viewBox="0 0 24 24">
@@ -205,27 +182,12 @@ function Login() {
 
           <button
             type="submit"
-            disabled={loading || demoLoading || googleLoading}
+            disabled={loading || googleLoading}
             className="sb-btn sb-btn-primary sb-btn--lg sb-btn--block"
           >
             {loading ? "Authenticating..." : "Sign In →"}
           </button>
         </form>
-
-        <div className="sb-auth-demo-section">
-          <button
-            type="button"
-            onClick={handleDemoSignIn}
-            disabled={loading || demoLoading || googleLoading}
-            className="sb-btn sb-btn-demo sb-btn--block"
-            title="Instant sign in as Prof. Vikram Rao (NIT)"
-          >
-            <span className="sb-demo-icon">⚡</span>
-            <span>
-              {demoLoading ? "Connecting..." : "1-Click Viva Demo: Prof. Vikram Rao"}
-            </span>
-          </button>
-        </div>
 
         <div className="sb-auth-footer">
           <span>Don't have an account? </span>
