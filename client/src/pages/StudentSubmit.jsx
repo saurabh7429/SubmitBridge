@@ -65,9 +65,13 @@ function StudentSubmit() {
 
   // ── Handlers ─────────────────────────────────────────────────────────────────
   const handleGoogleSignIn = async () => {
+    // Strip any hash fragment — Supabase OAuth appends its own #access_token=...
+    // to the redirectTo URL. If the current URL already has a hash (from a prior
+    // OAuth redirect), it must be removed to avoid a broken double-hash redirect.
+    const redirectTo = window.location.origin + window.location.pathname;
     await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: window.location.href },
+      options: { redirectTo },
     });
   };
 
