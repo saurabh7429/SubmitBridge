@@ -19,12 +19,7 @@ export function Navbar() {
     <header className="sb-navbar">
       <div className="sb-navbar-inner">
         <Link to="/dashboard" className="sb-navbar-brand" title="SubmitBridge Home">
-          <div className="sb-navbar-brand-icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
-              <path d="M6 12v5c3 3 9 3 12 0v-5" />
-            </svg>
-          </div>
+          <img src="/logo.png" alt="SubmitBridge Logo" className="sb-navbar-brand-logo" />
           <div className="sb-navbar-brand-copy">
             <div className="sb-navbar-brand-name">
               Submit<span className="sb-brand-accent">Bridge</span>

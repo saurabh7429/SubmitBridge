@@ -2830,3 +2830,42 @@ button, input, textarea, select {
     align-items: flex-start;
   }
 }
+
+/* ── SubmitBridge Brand Logo Image Classes ── */
+.sb-navbar-brand-logo {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  border-radius: var(--sb-radius-md);
+  background: #ffffff;
+  padding: 3px;
+  border: 1px solid var(--sb-border);
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08);
+  flex-shrink: 0;
+}
+
+.sb-student-brand-logo {
+  width: 46px;
+  height: 46px;
+  object-fit: contain;
+  border-radius: var(--sb-radius-md);
+  background: #ffffff;
+  padding: 4px;
+  border: 1px solid var(--sb-border);
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08);
+  flex-shrink: 0;
+}
+
+.sb-auth-brand-logo {
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+  border-radius: var(--sb-radius-lg);
+  background: #ffffff;
+  padding: 6px;
+  border: 1.5px solid var(--sb-border);
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
+  margin-bottom: 16px;
+  display: inline-block;
+}
+

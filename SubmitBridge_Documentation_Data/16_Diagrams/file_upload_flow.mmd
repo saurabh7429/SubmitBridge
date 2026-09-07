@@ -1,0 +1,28 @@
+flowchart TD
+    A["Student drops/selects file in browser"] --> B{"Client format check (.pdf / .docx)"}
+    B -- Invalid --> C["Show format error alert"]
+    B -- Valid --> D{"Client size check (<= 10MB)"}
+    D -- Invalid --> E["Show size limit error alert"]
+    D -- Valid --> F["Attach file to FormData"]
+
+    F --> G["POST /api/submissions/:assignmentId"]
+    G --> H["Multer Memory Buffer in RAM"]
+    H --> I{"Server MIME type whitelist check"}
+    I -- Reject --> J["HTTP 400: Invalid file type"]
+    I -- Accept --> K{"Is deadline expired?"}
+    K -- Expired --> L["HTTP 400: Submissions closed"]
+    K -- Active --> M["Upload to Supabase Storage: {id}/{roll}-{timestamp}.{ext}"]
+    
+    M --> N["Retrieve public CDN URL via getPublicUrl()"]
+    N --> O{"Check existing submission for same student_email"}
+    O -- Yes (Resubmission) --> P["Delete old file from Supabase Storage bucket"]
+    P --> Q["Extract text: pdf-parse / mammoth / stream fallback"]
+    O -- No (First time) --> Q
+    
+    Q --> R["Execute Azure OpenAI & Sapling AI pipelines"]
+    R --> S{"Is resubmission?"}
+    S -- Yes --> T["UPDATE submissions row with new file_url, path, AI marks, timestamp"]
+    S -- No --> U["INSERT new submissions row"]
+    T --> V["Return HTTP 200 + receipt payload to client"]
+    U --> V
+    V --> W["Student sees SubmissionSuccess screen"]

@@ -1,0 +1,38 @@
+flowchart TD
+    Start([Student receives assignment link or scans QR]) --> OpenURL[Open /submit/:assignmentId]
+    OpenURL --> FetchContext[Fetch Assignment Guidelines, Questions & Deadline]
+    FetchContext --> CheckDeadline{Is current time > due date?}
+    CheckDeadline -- Yes --> SubClosed[Display Submissions Closed Alert]
+    SubClosed --> End([Workflow Terminated])
+    CheckDeadline -- No --> AuthWall{Signed in with Google?}
+    AuthWall -- No --> ClickGoogle[Click 'Sign in with Google']
+    ClickGoogle --> SupaOAuth[Supabase Google OAuth Redirection]
+    SupaOAuth --> ReturnPortal[Return to Portal with Verified Google Session]
+    ReturnPortal --> AuthWall
+    AuthWall -- Yes --> DisplayForm[Display Student Submission Form]
+
+    DisplayForm --> FillMeta[Enter Full Name & Roll Number]
+    FillMeta --> SelectFile[Select or Drag & Drop File]
+    SelectFile --> ValidateFormat{Is file .pdf or .docx?}
+    ValidateFormat -- No --> FormatErr[Show Invalid File Format Error]
+    FormatErr --> SelectFile
+    ValidateFormat -- Yes --> ValidateSize{Is file <= 10MB?}
+    ValidateSize -- No --> SizeErr[Show File Exceeds 10MB Error]
+    SizeErr --> SelectFile
+    ValidateSize -- Yes --> ReadySubmit[File Attached Successfully]
+
+    ReadySubmit --> ClickSubmit[Click 'Submit Assignment Now →']
+    ClickSubmit --> ServerIngest[Server Ingests Buffer in RAM]
+    ServerIngest --> CloudStore[Upload Document to Supabase Storage]
+    CloudStore --> CheckOverwrite{Prior submission with same email?}
+    CheckOverwrite -- Yes --> DeleteOld[Delete Prior File from Storage Bucket]
+    DeleteOld --> ExtractText[Dual-Engine Text Extraction]
+    CheckOverwrite -- No --> ExtractText
+    
+    ExtractText --> CheckLength{Cleaned text >= 100 chars?}
+    CheckLength -- Yes --> CallAI[Invoke Azure OpenAI gpt-5-mini & Sapling AI]
+    CheckLength -- No --> SkipAI[Mark Content as Short / Non-Extractable]
+    CallAI --> SaveDB[Insert or Update Record in submissions Table]
+    SkipAI --> SaveDB
+    SaveDB --> ShowReceipt[Render Submission Receipt & Confirmation]
+    ShowReceipt --> Done([Submission Complete])

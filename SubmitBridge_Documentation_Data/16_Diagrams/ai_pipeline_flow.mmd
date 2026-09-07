@@ -1,0 +1,47 @@
+flowchart TD
+    DocBuffer["Multer In-Memory Document Buffer (PDF/DOCX)"] --> MimeFork{Inspect MIME / Extension}
+    MimeFork -- DOCX --> MammothParser["mammoth.extractRawText({ buffer })"]
+    MimeFork -- PDF --> PdfParseEngine["pdf-parse(buffer)"]
+    PdfParseEngine --> CheckPdfText{Text extracted successfully?}
+    CheckPdfText -- Yes --> RawText["Raw Text String"]
+    CheckPdfText -- No / Syntax Error --> StreamFallback["extractPdfStreamsFallback (zlib inflate on streams)"]
+    StreamFallback --> TjParser["Extract (string) Tj & [(string)] TJ text operators"]
+    TjParser --> RawText
+    MammothParser --> RawText
+
+    RawText --> TextCleaner["cleanExtractedText() Routine"]
+    TextCleaner --> StripHeaders["Strip metadata headers (Name, Roll No, Date)"]
+    StripHeaders --> NormalizeSpace["Collapse excessive whitespace & empty lines"]
+    NormalizeSpace --> Truncate["Truncate to ~4,000 characters"]
+    Truncate --> CleanedText["Cleaned Academic Text Buffer"]
+
+    CleanedText --> SubstanceCheck{Cleaned text >= 100 characters?}
+    SubstanceCheck -- No --> ShortContentNotice["Set ai_summary = 'Document text is very short'"]
+    ShortContentNotice --> PersistDB["Save to Supabase with Status PENDING"]
+
+    SubstanceCheck -- Yes --> LLMGrading["Invoke gradeWithAzureOpenAI()"]
+    LLMGrading --> PromptPrep["Construct System Prompt & Strict JSON Schema with MaxMarks"]
+    PromptPrep --> AzureCall["POST Azure OpenAI Chat Completions (gpt-5-mini)"]
+    AzureCall --> ValidateScore{Is score numeric and in [0, MaxMarks]?}
+    ValidateScore -- Out of Bounds --> RetryAI{Retry Count < 2?}
+    RetryAI -- Yes --> AzureCall
+    RetryAI -- No --> FallbackClamp["Hard Math Clamp: Math.max(0, Math.min(maxMarks, score))"]
+    ValidateScore -- Valid --> FormatResults["Extract estimatedMarks, summary, reasoning"]
+    FallbackClamp --> FormatResults
+
+    CleanedText --> SaplingDetector["Invoke detectAIContent()"]
+    SaplingDetector --> CheckKeys["getSaplingApiKeys() Pool"]
+    CheckKeys --> ActiveKey["Select Key via (saplingKeyIndex % totalKeys)"]
+    ActiveKey --> SaplingReq["POST https://api.sapling.ai/api/v1/aidetect"]
+    SaplingReq --> CheckStatus{HTTP 200 OK?}
+    CheckStatus -- Rate Limit / Error --> TryNextKey{Attempt < totalKeys?}
+    TryNextKey -- Yes --> ActiveKey
+    TryNextKey -- No --> FailSafeDetect["Set ai_detection_status = 'FAILED' (Non-blocking)"]
+    CheckStatus -- Success --> CalcScore["Convert rawScore * 100 to Integer Percentage"]
+    CalcScore --> AdvancePointer["Advance saplingKeyIndex to Next Key"]
+    AdvancePointer --> DetectDone["ai_detection_score = score%, status = 'COMPLETED'"]
+
+    FormatResults --> CombinedResults["Combine AI Marks + Integrity Score"]
+    DetectDone --> CombinedResults
+    FailSafeDetect --> CombinedResults
+    CombinedResults --> PersistDB

@@ -1,0 +1,51 @@
+sequenceDiagram
+    autonumber
+    actor Teacher as Faculty Member
+    participant Client as React Client
+    participant API as Express Auth API
+    participant Resend as Resend / Brevo Email
+    participant Supa as Supabase Auth & Database
+
+    %% Registration Flow
+    Note over Teacher,Supa: Phase 1: Faculty Registration with Email OTP
+    Teacher->>Client: Enters Name, College, Email, Password
+    Client->>API: POST /api/auth/register-initiate
+    API->>Supa: Check duplicate in teachers table
+    API->>Supa: Generate signup verification link & OTP (Admin API)
+    API->>Resend: sendOtpEmail(to, name, otp)
+    Resend-->>Teacher: Deliver 6-digit OTP code to Inbox
+    API-->>Client: Return OTP dispatched confirmation
+    Teacher->>Client: Enters 6-digit OTP code
+    Client->>Supa: supabase.auth.verifyOtp(email, token)
+    Supa-->>Client: OTP Verified OK
+    Client->>API: POST /api/auth/register-verified
+    API->>API: bcrypt.hash(password, 10)
+    API->>Supa: Insert new row into teachers table
+    API->>API: jwt.sign({ id, name, email, collegeName }, JWT_SECRET, 7d)
+    API-->>Client: Return JWT Token + Teacher Profile
+    Client->>Client: Save token to localStorage & navigate to /dashboard
+
+    %% Login Flow
+    Note over Teacher,Supa: Phase 2: Faculty Password Login
+    Teacher->>Client: Enters Email & Password
+    Client->>API: POST /api/auth/login
+    API->>Supa: Select teacher WHERE email = cleanEmail
+    API->>API: bcrypt.compare(password, teacher.password)
+    API->>API: jwt.sign(payload, JWT_SECRET, 7d)
+    API-->>Client: Return JWT Token + Teacher Profile
+    Client->>Client: Save token to localStorage & navigate to /dashboard
+
+    %% Google OAuth Flow
+    Note over Teacher,Supa: Phase 3: Faculty Google OAuth Sign-In
+    Teacher->>Client: Clicks "Continue with Google"
+    Client->>Supa: supabase.auth.signInWithOAuth({ provider: 'google' })
+    Supa-->>Client: OAuth Callback with access_token & user session
+    Client->>API: POST /api/auth/google { email }
+    API->>Supa: Check if email exists in teachers table
+    alt Teacher is Registered
+        API->>API: Generate JWT Token
+        API-->>Client: Return JWT Token + Teacher Profile
+    else Not Registered
+        API-->>Client: HTTP 403 Forbidden ("Please register first")
+        Client->>Supa: supabase.auth.signOut() (clear orphan session)
+    end

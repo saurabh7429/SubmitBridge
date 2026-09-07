@@ -1,0 +1,40 @@
+flowchart TD
+    Start([Teacher Visits SubmitBridge]) --> AuthCheck{Already has account?}
+    AuthCheck -- No --> RegisterForm[Fill Registration Form]
+    RegisterForm --> SendOTP[Receive 6-Digit Email OTP via Resend]
+    SendOTP --> VerifyOTP[Verify OTP Code]
+    VerifyOTP --> HashPass[bcrypt Password Hash Created]
+    HashPass --> Dashboard[Access Teacher Dashboard]
+    AuthCheck -- Yes --> LoginChoice{Login Method}
+    LoginChoice -- Email/Password --> VerifyPass[Verify bcrypt Password Hash]
+    LoginChoice -- Google OAuth --> VerifyGoogle[Verify Registered Google Account]
+    LoginChoice -- Viva Demo --> DemoLogin[1-Click Evaluator Sign-In]
+    VerifyPass --> IssueJWT[Issue 7-Day JWT Token]
+    VerifyGoogle --> IssueJWT
+    DemoLogin --> IssueJWT
+    IssueJWT --> Dashboard
+
+    Dashboard --> CreateChoice{Action}
+    CreateChoice -- "Create Assignment" --> AsgnForm[Fill Assignment Form & Questions]
+    AsgnForm --> SubmitAsgn[POST /api/assignments]
+    SubmitAsgn --> GenerateQR[Server Generates Shareable URL & Base64 QR Code]
+    GenerateQR --> ShareStudent[Share Link / Project QR in Class]
+    ShareStudent --> Dashboard
+
+    CreateChoice -- "Manage Assignments" --> ViewDetail[Open Assignment Detail Page]
+    ViewDetail --> TableView[Review Submissions Table]
+    TableView --> SubActions{Submission Review}
+    SubActions -- "Open Document" --> ViewPDF[Open Public Supabase Storage Link]
+    SubActions -- "AI Justification" --> OpenModal[Open AI Assessment Summary Modal]
+    SubActions -- "Input Grade" --> EnterMark[Enter Numeric Mark in Points Field]
+    EnterMark --> ClickApprove[Click 'Approve' to Finalize]
+    ClickApprove --> DBUpdate[PATCH /api/submissions/:id/grade]
+    DBUpdate --> TableView
+
+    TableView -- "Export Records" --> DownloadCSV[Download Formatted CSV Spreadsheet]
+
+    CreateChoice -- "Trash Assignment" --> MoveTrash[Soft-Delete to Trash]
+    MoveTrash --> TrashGrace{Within 3 Days?}
+    TrashGrace -- Yes --> CanRestore[Restore Assignment]
+    CanRestore --> Dashboard
+    TrashGrace -- No --> AutoPurge[Permanently Purged by Database]

@@ -1,0 +1,53 @@
+erDiagram
+    TEACHERS ||--o{ ASSIGNMENTS : "creates"
+    ASSIGNMENTS ||--o{ SUBMISSIONS : "receives"
+
+    TEACHERS {
+        UUID id PK "gen_random_uuid()"
+        TEXT name "Teacher Name"
+        TEXT email UK "Unique Email Address"
+        TEXT password "bcrypt Password Hash"
+        TEXT college_name "College / University Name"
+        TIMESTAMPTZ created_at "Registration Timestamp"
+    }
+
+    ASSIGNMENTS {
+        UUID id PK "gen_random_uuid()"
+        UUID teacher_id FK "References teachers.id"
+        TEXT college_name "Institution Name"
+        TEXT department "Academic Department"
+        TEXT teacher_name "Instructor Name"
+        TEXT subject "Subject Name"
+        TEXT subject_code "Course Code (e.g. CPPM 101)"
+        TEXT title "Assignment Title"
+        TEXT instructions "Guidelines for Students"
+        TEXT questions "Numbered Questions List"
+        INTEGER max_marks "Maximum Marks (Default 100)"
+        TIMESTAMPTZ due_date "Submission Deadline"
+        BOOLEAN allow_late_submission "Late Submission Flag"
+        TEXT allowed_file_types "Allowed Formats (pdf, docx)"
+        TEXT shareable_link "Public Submission URL"
+        TIMESTAMPTZ created_at "Creation Timestamp"
+        BOOLEAN is_deleted "Soft Delete State"
+        TIMESTAMPTZ deleted_at "Soft Delete Timestamp (3-Day Window)"
+    }
+
+    SUBMISSIONS {
+        UUID id PK "gen_random_uuid()"
+        UUID assignment_id FK "References assignments.id"
+        TEXT student_name "Student Full Name"
+        TEXT roll_number "Student Roll Number"
+        TEXT student_email "Verified Google Account Email"
+        TEXT file_url "Supabase Public Storage URL"
+        TEXT file_path "Storage Key Relative Path"
+        TIMESTAMPTZ submitted_at "Submission Timestamp"
+        INTEGER ai_estimated_marks "Azure OpenAI Awarded Mark"
+        TEXT ai_summary "AI Work Evaluation Summary"
+        TEXT ai_reasoning "AI Marking Justification"
+        INTEGER teacher_final_marks "Approved Faculty Grade"
+        TEXT grading_status "PENDING, AI_ESTIMATED, TEACHER_APPROVED"
+        NUMERIC ai_detection_score "Sapling AI Likelihood Percentage (0-100)"
+        TEXT ai_detection_status "COMPLETED, SKIPPED, FAILED"
+        TIMESTAMPTZ created_at "Initial Insertion Timestamp"
+        TIMESTAMPTZ updated_at "Resubmission Update Timestamp"
+    }

@@ -1,0 +1,46 @@
+sequenceDiagram
+    autonumber
+    actor T as Faculty Member
+    actor S as College Student
+    participant C as React Client (Browser)
+    participant Srv as Express Server
+    participant DB as Supabase PostgreSQL
+    participant St as Supabase Storage
+    participant AI as Azure OpenAI & Sapling
+
+    %% Faculty creates assignment
+    T->>C: Fill Coursework Details & Questions
+    C->>Srv: POST /api/assignments (Bearer JWT)
+    Srv->>DB: Insert into assignments table
+    Srv-->>C: Return created assignment + Base64 QR Code
+    T->>S: Project QR Code in classroom or share public URL
+
+    %% Student submits assignment
+    S->>C: Open /submit/:id via URL or scan QR
+    C->>Srv: GET /api/submissions/assignment/:id
+    Srv->>DB: Select assignment metadata
+    Srv-->>C: Render questions, guidelines & deadline
+    S->>C: Sign in with Google (verify student email)
+    S->>C: Attach PDF/DOCX coursework file & Enter Roll Number
+    C->>Srv: POST /api/submissions/:id (multipart/form-data)
+    Srv->>St: Upload file to submissions bucket
+    Note over Srv,DB: Check if student already submitted (Overwrite rule)
+    opt Prior submission exists
+        Srv->>St: Delete previous file from storage
+    end
+    Srv->>AI: Extract text -> Evaluate (gpt-5-mini) + Scan AI % (Sapling)
+    AI-->>Srv: Return marks, summary, justification, AI likelihood %
+    Srv->>DB: Insert or Update submissions record
+    Srv-->>C: Return confirmation & receipt
+    C-->>S: Display submission success view
+
+    %% Faculty evaluates & finalizes
+    T->>C: Open /assignment/:id
+    C->>Srv: GET /api/assignments/:id (Bearer JWT)
+    Srv->>DB: Fetch assignment + all student submissions
+    Srv-->>C: Render submissions table with AI indicators
+    T->>C: Inspect AI Summary modal & adjust/approve marks
+    C->>Srv: PATCH /api/submissions/:subId/grade
+    Srv->>DB: Update teacher_final_marks & grading_status = TEACHER_APPROVED
+    Srv-->>C: Confirm grade update
+    T->>C: Click "Export CSV" to download grade sheet

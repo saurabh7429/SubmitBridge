@@ -1,0 +1,55 @@
+graph TB
+    subgraph ClientLayer ["Frontend Client Layer (Vercel Edge CDN)"]
+        ReactApp["React 18 SPA (Vite)"]
+        Router["React Router DOM 6"]
+        AuthCtx["AuthContext & AssignmentsContext"]
+        AxiosClient["Axios HTTP Client (Bearer Interceptor)"]
+        SupaJSClient["Supabase JS Client (Google OAuth)"]
+        ReactApp --> Router
+        Router --> AuthCtx
+        AuthCtx --> AxiosClient
+        AuthCtx --> SupaJSClient
+    end
+
+    subgraph APILayer ["Backend Application Layer (Render Web Service)"]
+        ExpressServer["Express.js Server (Port 5000)"]
+        CORS["CORS Middleware"]
+        AuthMid["JWT Auth Middleware"]
+        MulterRAM["Multer (In-Memory Buffer)"]
+        
+        AuthRoutes["/api/auth (Routes)"]
+        AsgnRoutes["/api/assignments (Routes)"]
+        SubRoutes["/api/submissions (Routes)"]
+        
+        ExpressServer --> CORS
+        ExpressServer --> AuthRoutes
+        ExpressServer --> AsgnRoutes
+        ExpressServer --> SubRoutes
+        AsgnRoutes --> AuthMid
+        SubRoutes --> MulterRAM
+    end
+
+    subgraph ServiceLayer ["External Microservices & AI Engines"]
+        AzureOpenAI["Azure OpenAI Service (gpt-5-mini)"]
+        SaplingAI["Sapling AI Content Detector (Round-Robin)"]
+        ResendMail["Resend Email Service (6-Digit OTP)"]
+        Extractor["Text Extraction (pdf-parse + mammoth)"]
+        
+        SubRoutes --> Extractor
+        Extractor --> AzureOpenAI
+        Extractor --> SaplingAI
+        AuthRoutes --> ResendMail
+    end
+
+    subgraph DataLayer ["Cloud Persistence Layer (Supabase ap-south-1)"]
+        PostgresDB[("PostgreSQL 17.6 Database")]
+        StorageBucket["Supabase Storage Bucket ('submissions')"]
+        
+        AuthRoutes --> PostgresDB
+        AsgnRoutes --> PostgresDB
+        SubRoutes --> PostgresDB
+        SubRoutes --> StorageBucket
+    end
+
+    AxiosClient -- "REST API (HTTPS)" --> ExpressServer
+    SupaJSClient -- "OAuth Session" --> PostgresDB

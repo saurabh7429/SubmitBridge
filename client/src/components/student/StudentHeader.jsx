@@ -6,12 +6,7 @@ export function StudentHeader({ collegeName, department }) {
     <header className="sb-student-header">
       <div className="sb-student-header-inner">
         <div className="sb-student-header-left">
-          <div className="sb-student-crest">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
-              <path d="M6 12v5c3 3 9 3 12 0v-5" />
-            </svg>
-          </div>
+          <img src="/logo.png" alt="SubmitBridge Logo" className="sb-student-brand-logo" />
           <div className="sb-student-header-meta">
             <div className="sb-student-portal-tag">
               <span>SubmitBridge Student Portal</span>

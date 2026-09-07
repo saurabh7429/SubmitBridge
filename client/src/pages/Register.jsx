@@ -207,12 +207,7 @@ function Register() {
     <div className="sb-auth-page">
       <div className="sb-card sb-auth-card">
         <div className="sb-auth-header">
-          <div className="sb-auth-logo-badge">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
-              <path d="M6 12v5c3 3 9 3 12 0v-5" />
-            </svg>
-          </div>
+          <img src="/logo.png" alt="SubmitBridge Logo" className="sb-auth-brand-logo" />
           <h1 className="sb-auth-title">
             {step === "form" ? "Faculty Registration" : "Verify Your Email"}
           </h1>
