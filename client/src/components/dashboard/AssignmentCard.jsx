@@ -72,16 +72,11 @@ export function AssignmentCard({ assignment, onDelete, onRestore, isActionLoadin
         <span>{assignment.department || 'All departments'}</span>
       </div>
 
-      {/* Meta details */}
+      {/* Meta details: 2x2 grid */}
       <div className="assignment-card__meta">
         <div className="meta-pill">
           <span className="meta-pill__label">Max Marks</span>
           <span className="meta-pill__value">{assignment.max_marks} pts</span>
-        </div>
-
-        <div className="meta-pill">
-          <span className="meta-pill__label">Status</span>
-          <StatusPill isDeleted={isDeleted} isOverdue={overdue} />
         </div>
 
         <div className="meta-pill">
@@ -91,11 +86,16 @@ export function AssignmentCard({ assignment, onDelete, onRestore, isActionLoadin
           </span>
         </div>
 
-        <div className="meta-pill meta-pill--full">
+        <div className="meta-pill">
           <span className="meta-pill__label">Due Date</span>
           <span className={`meta-pill__value ${overdue ? 'text-danger' : ''}`}>
             {assignment.due_date ? formatDateTime(assignment.due_date) : 'No deadline set'}
           </span>
+        </div>
+
+        <div className="meta-pill">
+          <span className="meta-pill__label">Status</span>
+          <StatusPill isDeleted={isDeleted} isOverdue={overdue} />
         </div>
       </div>
 

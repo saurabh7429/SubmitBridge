@@ -2,7 +2,11 @@ import React from 'react';
 
 export function CardSkeleton({ count = 3 }) {
   return (
-    <div className="assignment-grid">
+    <div
+      className={`assignment-grid ${
+        count === 1 ? 'assignment-grid--single' : count === 2 ? 'assignment-grid--2col' : ''
+      }`}
+    >
       {Array.from({ length: count }).map((_, i) => (
         <div key={i} className="skeleton-card">
           <div className="skeleton-line skeleton-line--pill" />

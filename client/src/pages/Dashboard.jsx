@@ -119,7 +119,15 @@ function Dashboard() {
           }
         />
       ) : (
-        <div className="assignment-grid">
+        <div
+          className={`assignment-grid ${
+            displayed.length === 1
+              ? 'assignment-grid--single'
+              : displayed.length === 2
+              ? 'assignment-grid--2col'
+              : ''
+          }`}
+        >
           {displayed.map((asgn) => (
             <AssignmentCard
               key={asgn.id}
