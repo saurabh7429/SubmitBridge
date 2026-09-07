@@ -2209,6 +2209,116 @@ button, input, textarea, select {
   color: var(--sb-text-primary);
 }
 
+/* ── Auth Alerts ─────────────────────────────────────────────────────────── */
+.sb-alert {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: var(--sb-radius-md);
+  font-size: 13.5px;
+  font-weight: 600;
+  margin-bottom: 18px;
+  line-height: 1.45;
+}
+
+.sb-alert svg {
+  flex-shrink: 0;
+}
+
+.sb-alert--error {
+  background-color: var(--sb-danger-bg);
+  border: 1.5px solid var(--sb-danger-border);
+  color: var(--sb-danger-text);
+}
+
+.sb-alert--info {
+  background-color: var(--sb-info-bg);
+  border: 1.5px solid var(--sb-info-border);
+  color: var(--sb-info-text);
+}
+
+/* ── OTP Verification Screen ─────────────────────────────────────────────── */
+.sb-otp-notice {
+  text-align: center;
+  padding: 16px 12px;
+  background-color: var(--sb-bg-subtle);
+  border: 1.5px solid var(--sb-border);
+  border-radius: var(--sb-radius-md);
+  margin-bottom: 20px;
+}
+
+.sb-otp-icon {
+  font-size: 32px;
+  margin-bottom: 6px;
+}
+
+.sb-otp-text {
+  font-size: 13.5px;
+  color: var(--sb-text-secondary);
+  line-height: 1.5;
+}
+
+.sb-otp-email {
+  color: var(--sb-primary-accent);
+  font-family: var(--sb-font-mono);
+  font-size: 14px;
+}
+
+.sb-input--otp {
+  font-family: var(--sb-font-mono);
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: 12px;
+  text-align: center;
+  padding: 12px 16px;
+  background-color: #ffffff;
+}
+
+.sb-otp-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1.5px solid var(--sb-border-subtle);
+}
+
+.sb-btn-resend {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--sb-primary-accent);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.sb-btn-resend:hover:not(:disabled) {
+  text-decoration: underline;
+}
+
+.sb-btn-resend:disabled {
+  color: var(--sb-text-muted);
+  cursor: not-allowed;
+}
+
+.sb-btn-text-link {
+  background: transparent;
+  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--sb-text-muted);
+  cursor: pointer;
+  transition: color var(--sb-transition-fast);
+}
+
+.sb-btn-text-link:hover {
+  color: var(--sb-text-primary);
+  text-decoration: underline;
+}
+
+
 .sb-btn-faculty-nav {
   display: inline-flex;
   align-items: center;

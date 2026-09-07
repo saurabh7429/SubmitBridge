@@ -24,13 +24,16 @@ function Login() {
         try {
           const res = await googleFacultyAuth({
             email: session.user.email,
-            name: session.user.user_metadata?.full_name || session.user.email.split("@")[0],
-            collegeName: "",
           });
           login(res.data.token, res.data.teacher);
           navigate("/dashboard");
         } catch (err) {
-          setError(err.response?.data?.message || "Google login failed.");
+          // If not registered, sign out from Supabase so no orphan session stays
+          await supabase.auth.signOut();
+          setError(
+            err.response?.data?.message ||
+              "No faculty account found for this Google email. Please register first."
+          );
         } finally {
           setGoogleLoading(false);
         }
@@ -38,6 +41,7 @@ function Login() {
     };
     handleOAuthCallback();
   }, [login, navigate]);
+
 
   const handleGoogleAuth = async () => {
     setError("");

@@ -202,10 +202,100 @@ router.post("/demo", async (req, res) => {
   }
 });
 
+// ─── POST /api/auth/check-email ───────────────────────────────────────────────
+// Check if faculty email is already in use before triggering OTP
+router.post("/check-email", async (req, res) => {
+  const { email } = req.body;
+  if (!email) {
+    return res.status(400).json({ message: "Email is required." });
+  }
+
+  try {
+    const cleanEmail = email.toLowerCase().trim();
+    const { data: existing, error } = await supabase
+      .from("teachers")
+      .select("id")
+      .eq("email", cleanEmail)
+      .maybeSingle();
+
+    if (error) {
+      return res.status(500).json({ message: "Database error.", error: error.message });
+    }
+
+    if (existing) {
+      return res.status(400).json({ message: "This email is already registered. Please sign in." });
+    }
+
+    res.json({ available: true });
+  } catch (err) {
+    res.status(500).json({ message: "Server error.", error: err.message });
+  }
+});
+
+// ─── POST /api/auth/register-verified ─────────────────────────────────────────
+// Complete registration after email OTP is verified
+router.post("/register-verified", async (req, res) => {
+  const { name, email, password, collegeName } = req.body;
+
+  if (!name || !email || !password) {
+    return res.status(400).json({ message: "Name, email, and password are required." });
+  }
+
+  try {
+    const cleanEmail = email.toLowerCase().trim();
+
+    // Check if already registered
+    const { data: existing } = await supabase
+      .from("teachers")
+      .select("id")
+      .eq("email", cleanEmail)
+      .maybeSingle();
+
+    if (existing) {
+      return res.status(400).json({ message: "Account already exists for this email. Please sign in." });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    const { data: newTeacher, error: insertError } = await supabase
+      .from("teachers")
+      .insert([
+        {
+          name: name.trim(),
+          email: cleanEmail,
+          password: hashedPassword,
+          college_name: (collegeName || "").trim(),
+        },
+      ])
+      .select("id, name, email, college_name")
+      .single();
+
+    if (insertError) {
+      return res.status(500).json({ message: "Failed to create teacher account.", error: insertError.message });
+    }
+
+    const token = generateToken(newTeacher);
+    res.status(201).json({
+      message: "Registration and email verification successful!",
+      token,
+      teacher: {
+        id: newTeacher.id,
+        name: newTeacher.name,
+        email: newTeacher.email,
+        collegeName: newTeacher.college_name,
+      },
+    });
+  } catch (err) {
+    console.error("Register verified error:", err);
+    res.status(500).json({ message: "Server error.", error: err.message });
+  }
+});
+
 // ─── POST /api/auth/google ────────────────────────────────────────────────────
-// Teacher Google OAuth Sign-In / Register
+// Teacher Google OAuth Sign-In — RESTRICTED TO REGISTERED FACULTY ONLY
 router.post("/google", async (req, res) => {
-  const { email, name, collegeName } = req.body;
+  const { email } = req.body;
 
   if (!email) {
     return res.status(400).json({ message: "Email is required." });
@@ -214,8 +304,8 @@ router.post("/google", async (req, res) => {
   try {
     const cleanEmail = email.toLowerCase().trim();
 
-    // Check if teacher exists
-    let { data: teacher, error: fetchError } = await supabase
+    // Check if teacher exists in registered database
+    const { data: teacher, error: fetchError } = await supabase
       .from("teachers")
       .select("*")
       .eq("email", cleanEmail)
@@ -225,30 +315,12 @@ router.post("/google", async (req, res) => {
       return res.status(500).json({ message: "Database error.", error: fetchError.message });
     }
 
+    // Only allow sign-in if teacher is already registered
     if (!teacher) {
-      // Create new teacher record for Google user
-      const salt = await bcrypt.genSalt(10);
-      const dummyPassword = await bcrypt.hash(Math.random().toString(36) + Date.now(), salt);
-      const teacherName = (name || cleanEmail.split("@")[0] || "Faculty Member").trim();
-      const institution = (collegeName || "Faculty Member").trim();
-
-      const { data: newTeacher, error: insertError } = await supabase
-        .from("teachers")
-        .insert([
-          {
-            name: teacherName,
-            email: cleanEmail,
-            password: dummyPassword,
-            college_name: institution,
-          },
-        ])
-        .select("id, name, email, college_name")
-        .single();
-
-      if (insertError) {
-        return res.status(500).json({ message: "Failed to register teacher.", error: insertError.message });
-      }
-      teacher = newTeacher;
+      return res.status(403).json({
+        message: `No faculty account found for ${cleanEmail}. Please register with this email first.`,
+        notRegistered: true,
+      });
     }
 
     const token = generateToken(teacher);
@@ -268,6 +340,7 @@ router.post("/google", async (req, res) => {
     res.status(500).json({ message: "Server error during Google auth.", error: err.message });
   }
 });
+
 
 
 

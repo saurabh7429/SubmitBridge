@@ -23,6 +23,17 @@ const authHeader = () => ({
 });
 
 // ─── AUTH APIS ────────────────────────────────────────────────────────────────
+export const checkEmailAvailability = (email) =>
+  axios.post(`${API_BASE}/auth/check-email`, { email });
+
+export const confirmVerifiedTeacher = ({ name, email, password, collegeName }) =>
+  axios.post(`${API_BASE}/auth/register-verified`, {
+    name,
+    email,
+    password,
+    collegeName,
+  });
+
 export const registerTeacher = (name, email, password, collegeName) =>
   axios.post(`${API_BASE}/auth/register`, {
     name,
@@ -41,8 +52,8 @@ export const googleFacultyAuth = (data) =>
   axios.post(`${API_BASE}/auth/google`, data);
 
 export const getTeacherProfile = () =>
-
   axios.get(`${API_BASE}/auth/me`);
+
 
 
 // ─── ASSIGNMENTS APIS ─────────────────────────────────────────────────────────
