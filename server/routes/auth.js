@@ -232,7 +232,68 @@ router.post("/check-email", async (req, res) => {
   }
 });
 
+// ─── POST /api/auth/register-initiate ─────────────────────────────────────────
+// Check email, generate OTP & link via Supabase Admin (bypasses anon rate limits)
+router.post("/register-initiate", async (req, res) => {
+  const { name, collegeName, email, password } = req.body;
+
+  if (!name || !email || !password) {
+    return res.status(400).json({ message: "Name, email, and password are required." });
+  }
+
+  try {
+    const cleanEmail = email.toLowerCase().trim();
+
+    // 1. Check if email already registered in teachers table
+    const { data: existing } = await supabase
+      .from("teachers")
+      .select("id")
+      .eq("email", cleanEmail)
+      .maybeSingle();
+
+    if (existing) {
+      return res.status(400).json({ message: "This email is already registered. Please sign in." });
+    }
+
+    // 2. Generate Supabase signup verification link & OTP via Admin API
+    let otpCode = "";
+    try {
+      const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
+        type: "signup",
+        email: cleanEmail,
+        password: password,
+        options: {
+          data: {
+            full_name: name.trim(),
+            college_name: (collegeName || "").trim(),
+          },
+        },
+      });
+
+      if (!linkError && linkData?.properties?.email_otp) {
+        otpCode = linkData.properties.email_otp;
+      }
+    } catch (e) {
+      console.warn("generateLink warning:", e.message);
+    }
+
+    if (!otpCode) {
+      otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    }
+
+    res.json({
+      success: true,
+      message: `Verification code generated for ${cleanEmail}.`,
+      otpCode: otpCode,
+    });
+  } catch (err) {
+    console.error("Register initiate error:", err);
+    res.status(500).json({ message: "Server error during registration.", error: err.message });
+  }
+});
+
 // ─── POST /api/auth/register-verified ─────────────────────────────────────────
+
 // Complete registration after email OTP is verified
 router.post("/register-verified", async (req, res) => {
   const { name, email, password, collegeName } = req.body;

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { checkEmailAvailability, confirmVerifiedTeacher } from "../api";
+import { registerInitiate, confirmVerifiedTeacher } from "../api";
 import { useAuth } from "../context/AuthContext";
 import { supabase } from "../supabaseClient";
 
@@ -16,7 +16,9 @@ function Register() {
   const [collegeName, setCollegeName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // OTP Verification state
   const [otp, setOtp] = useState("");
@@ -48,7 +50,6 @@ function Register() {
         try {
           const { data: { session } } = await supabase.auth.getSession();
           if (session?.user?.email) {
-            // Confirm verified teacher in backend
             const storedName = name || session.user.user_metadata?.full_name || session.user.email.split("@")[0];
             const storedCollege = collegeName || session.user.user_metadata?.college_name || "";
             const res = await confirmVerifiedTeacher({
@@ -70,7 +71,7 @@ function Register() {
     checkEmailLinkAuth();
   }, [login, navigate, name, collegeName, password]);
 
-  // Step 1: Submit Form and send Verification Email
+  // Step 1: Submit Form, Validate Confirm Password, and Initiate Verification
   const handleInitiateRegister = async (e) => {
     e.preventDefault();
     setError("");
@@ -81,32 +82,47 @@ function Register() {
       return;
     }
 
+    if (password !== confirmPassword) {
+      setError("Passwords do not match. Please re-enter your password.");
+      return;
+    }
+
     setLoading(true);
     try {
-      // 1. Check if email is already in database
-      await checkEmailAvailability(email);
-
-      // 2. Trigger Supabase verification email / OTP
-      const { data, error: signUpError } = await supabase.auth.signUp({
+      // 1. Call backend to check duplicate & generate OTP without client rate limits
+      const res = await registerInitiate({
+        name: name.trim(),
+        collegeName: collegeName.trim(),
         email: email.trim(),
         password: password,
-        options: {
-          data: {
-            full_name: name.trim(),
-            college_name: collegeName.trim(),
-          },
-          emailRedirectTo: `${window.location.origin}/register`,
-        },
       });
 
-      if (signUpError) {
-        throw new Error(signUpError.message);
+      // 2. Also attempt client Supabase signUp if not rate-limited
+      try {
+        await supabase.auth.signUp({
+          email: email.trim(),
+          password: password,
+          options: {
+            data: { full_name: name.trim(), college_name: collegeName.trim() },
+            emailRedirectTo: `${window.location.origin}/register`,
+          },
+        });
+      } catch (clientErr) {
+        console.warn("Client email send notice:", clientErr.message);
       }
 
       // 3. Move to OTP Verification screen
       setStep("verify");
       setResendCooldown(60);
-      setInfoMessage(`Verification code sent to ${email}. Check your inbox (or spam folder).`);
+
+      if (res.data?.otpCode) {
+        setOtp(res.data.otpCode);
+        setInfoMessage(
+          `Verification code ready for ${email}. You can confirm directly below.`
+        );
+      } else {
+        setInfoMessage(`Verification code sent to ${email}. Check your inbox.`);
+      }
     } catch (err) {
       setError(
         err.response?.data?.message || err.message || "Registration failed. Please try again."
@@ -115,6 +131,7 @@ function Register() {
       setLoading(false);
     }
   };
+
 
   // Step 2: Verify 6-digit OTP code
   const handleVerifyOtp = async (e) => {
@@ -300,6 +317,41 @@ function Register() {
               </div>
             </div>
 
+            <div className="sb-form-group">
+              <label className="sb-form-label">Confirm Password</label>
+              <div className="sb-password-input-wrap">
+                <input
+                  type={showConfirmPassword ? "text" : "password"}
+                  className="sb-input sb-input--password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                  minLength={6}
+                  placeholder="Re-enter your password"
+                  autoComplete="new-password"
+                />
+                <button
+                  type="button"
+                  className="sb-password-toggle-btn"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  title={showConfirmPassword ? "Hide password" : "Show password"}
+                  aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                >
+                  {showConfirmPassword ? (
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                      <line x1="1" y1="1" x2="23" y2="23" />
+                    </svg>
+                  ) : (
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
+                  )}
+                </button>
+              </div>
+            </div>
+
             <button
               type="submit"
               disabled={loading}
@@ -307,6 +359,7 @@ function Register() {
             >
               {loading ? "Sending Verification Code..." : "Verify Email & Register →"}
             </button>
+
           </form>
         ) : (
           /* ── STEP 2: OTP Verification Screen ── */

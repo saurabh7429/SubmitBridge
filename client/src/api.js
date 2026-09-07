@@ -23,10 +23,19 @@ const authHeader = () => ({
 });
 
 // ─── AUTH APIS ────────────────────────────────────────────────────────────────
+export const registerInitiate = ({ name, collegeName, email, password }) =>
+  axios.post(`${API_BASE}/auth/register-initiate`, {
+    name,
+    collegeName,
+    email,
+    password,
+  });
+
 export const checkEmailAvailability = (email) =>
   axios.post(`${API_BASE}/auth/check-email`, { email });
 
 export const confirmVerifiedTeacher = ({ name, email, password, collegeName }) =>
+
   axios.post(`${API_BASE}/auth/register-verified`, {
     name,
     email,
