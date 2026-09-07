@@ -22,7 +22,14 @@ export function SubmissionRow({
       <td className="cell-roll">
         <strong>{sub.roll_number}</strong>
       </td>
-      <td className="cell-name">{sub.student_name}</td>
+      <td className="cell-name">
+        <div>{sub.student_name}</div>
+        {sub.student_email && (
+          <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>
+            {sub.student_email}
+          </div>
+        )}
+      </td>
       <td className="cell-time">{formatDateTime(sub.submitted_at)}</td>
       <td>
         <a

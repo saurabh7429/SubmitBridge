@@ -74,13 +74,19 @@ router.get("/assignment/:assignmentId", async (req, res) => {
 // Handles Phase 1 upload + overwrite + Phase 2 AI grading + Phase 3 AI detection
 router.post("/:assignmentId", upload.single("file"), async (req, res) => {
   const { assignmentId } = req.params;
-  const { studentName, rollNumber } = req.body;
+  const { studentName, rollNumber, studentEmail } = req.body;
   const file = req.file;
 
   if (!studentName || !rollNumber) {
     return res
       .status(400)
       .json({ message: "Student Name and Roll Number are required." });
+  }
+
+  if (!studentEmail) {
+    return res
+      .status(400)
+      .json({ message: "Google sign-in is required. Student email is missing." });
   }
 
   if (!file) {
@@ -153,12 +159,12 @@ router.post("/:assignmentId", upload.single("file"), async (req, res) => {
 
     const publicFileUrl = urlData?.publicUrl || "";
 
-    // 3. Check for existing submission by same roll number (Overwrite rule)
+    // 3. Check for existing submission by same student email (Overwrite rule)
     const { data: existingSubmission } = await supabase
       .from("submissions")
       .select("id, file_path")
       .eq("assignment_id", assignmentId)
-      .eq("roll_number", cleanRoll)
+      .eq("student_email", studentEmail.toLowerCase().trim())
       .maybeSingle();
 
     // If overwriting, remove old file from storage to keep bucket clean
@@ -223,13 +229,15 @@ router.post("/:assignmentId", upload.single("file"), async (req, res) => {
         .from("submissions")
         .update({
           student_name: cleanName,
+          roll_number: cleanRoll,
+          student_email: studentEmail.toLowerCase().trim(),
           file_url: publicFileUrl,
           file_path: storagePath,
           submitted_at: new Date().toISOString(),
           ai_estimated_marks: aiEstimatedMarks,
           ai_summary: aiSummary,
           ai_reasoning: aiReasoning,
-          teacher_final_marks: null, // Reset teacher mark on resubmit
+          teacher_final_marks: null,
           grading_status: gradingStatus,
           ai_detection_score: aiDetectionScore,
           ai_detection_status: aiDetectionStatus,
@@ -256,6 +264,7 @@ router.post("/:assignmentId", upload.single("file"), async (req, res) => {
             assignment_id: assignmentId,
             student_name: cleanName,
             roll_number: cleanRoll,
+            student_email: studentEmail.toLowerCase().trim(),
             file_url: publicFileUrl,
             file_path: storagePath,
             submitted_at: new Date().toISOString(),
@@ -291,6 +300,7 @@ router.post("/:assignmentId", upload.single("file"), async (req, res) => {
         id: savedSubmission.id,
         studentName: savedSubmission.student_name,
         rollNumber: savedSubmission.roll_number,
+        studentEmail: savedSubmission.student_email,
         fileUrl: savedSubmission.file_url,
         aiDetectionScore: savedSubmission.ai_detection_score,
       },

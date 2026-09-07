@@ -20,7 +20,8 @@ export function SubmissionsTable({
     return submissions.filter((sub) => {
       const matchesSearch =
         sub.student_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        sub.roll_number?.toLowerCase().includes(searchTerm.toLowerCase());
+        sub.roll_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        sub.student_email?.toLowerCase().includes(searchTerm.toLowerCase());
 
       if (!matchesSearch) return false;
 
@@ -40,10 +41,11 @@ export function SubmissionsTable({
   // Export to CSV functionality
   const handleExportCSV = () => {
     if (!submissions.length) return;
-    const headers = ['Roll Number', 'Student Name', 'Submitted At', 'AI Score (%)', 'AI Estimated Marks', 'Final Grade', 'Status'];
+    const headers = ['Roll Number', 'Student Name', 'Student Email', 'Submitted At', 'AI Score (%)', 'AI Estimated Marks', 'Final Grade', 'Status'];
     const rows = submissions.map((s) => [
       `"${s.roll_number || ''}"`,
       `"${s.student_name || ''}"`,
+      `"${s.student_email || ''}"`,
       `"${new Date(s.submitted_at).toLocaleString()}"`,
       s.ai_detection_score !== null && s.ai_detection_score !== undefined ? s.ai_detection_score : 'N/A',
       s.ai_estimated_marks !== null && s.ai_estimated_marks !== undefined ? s.ai_estimated_marks : 'N/A',
