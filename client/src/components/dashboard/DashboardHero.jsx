@@ -2,6 +2,14 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 
 export function DashboardHero({ teacherName }) {
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour >= 4 && hour < 12) return 'Good morning';
+    if (hour >= 12 && hour < 17) return 'Good afternoon';
+    if (hour >= 17 && hour < 22) return 'Good evening';
+    return 'Good night';
+  };
+
   const greetingName = teacherName
     ? teacherName.startsWith('Prof') || teacherName.startsWith('Dr')
       ? teacherName
@@ -19,7 +27,7 @@ export function DashboardHero({ teacherName }) {
           <span className="sb-hero-session">Academic Session 2026</span>
         </div>
         <h1 className="sb-hero-title">
-          Welcome back{greetingName ? `, ${greetingName}` : ''}
+          {getGreeting()}{greetingName ? `, ${greetingName}` : ''}
         </h1>
         <p className="sb-hero-subtitle">
           Manage coursework, produce instant submission QR codes, and review submissions with automated AI assistance.
