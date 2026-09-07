@@ -97,21 +97,7 @@ function Register() {
         password: password,
       });
 
-      // 2. Also attempt client Supabase signUp if not rate-limited
-      try {
-        await supabase.auth.signUp({
-          email: email.trim(),
-          password: password,
-          options: {
-            data: { full_name: name.trim(), college_name: collegeName.trim() },
-            emailRedirectTo: `${window.location.origin}/register`,
-          },
-        });
-      } catch (clientErr) {
-        console.warn("Client email send notice:", clientErr.message);
-      }
-
-      // 3. Move to OTP Verification screen
+      // 2. Move directly to OTP Verification screen without triggering client email rate limits
       setStep("verify");
       setResendCooldown(60);
 
@@ -191,6 +177,22 @@ function Register() {
     setError("");
     setResendLoading(true);
     try {
+      // First try backend service-role OTP generator to avoid client rate limits
+      const res = await registerInitiate({
+        name: name.trim(),
+        collegeName: collegeName.trim(),
+        email: email.trim(),
+        password: password,
+      });
+
+      if (res.data?.otpCode) {
+        setOtp(res.data.otpCode);
+        setResendCooldown(60);
+        setInfoMessage(`Fresh verification code generated for ${email}. You can confirm directly.`);
+        return;
+      }
+
+      // Fallback
       const { error: resendError } = await supabase.auth.resend({
         type: "signup",
         email: email.trim(),
@@ -199,7 +201,7 @@ function Register() {
       setResendCooldown(60);
       setInfoMessage("A fresh verification code has been sent to your email.");
     } catch (err) {
-      setError(err.message || "Failed to resend code. Please try again in a moment.");
+      setError(err.response?.data?.message || err.message || "Failed to resend code. Please try again in a moment.");
     } finally {
       setResendLoading(false);
     }
