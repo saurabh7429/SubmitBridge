@@ -7,6 +7,20 @@ const authMiddleware = require("../middleware/auth");
 // All assignment routes require teacher authentication
 router.use(authMiddleware);
 
+// Helper: get the current client base URL dynamically
+function getClientBaseUrl(req) {
+  if (process.env.CLIENT_URL && !process.env.CLIENT_URL.includes("localhost")) {
+    return process.env.CLIENT_URL.replace(/\/+$/, "");
+  }
+  const origin =
+    req.headers.origin ||
+    (req.headers.referer ? new URL(req.headers.referer).origin : null);
+  if (origin && !origin.includes("localhost")) {
+    return origin.replace(/\/+$/, "");
+  }
+  return (process.env.CLIENT_URL || "https://submit-bridge.vercel.app").replace(/\/+$/, "");
+}
+
 // ─── POST /api/assignments ───────────────────────────────────────────────────
 // Create a new assignment with full context
 router.post("/", async (req, res) => {
@@ -77,9 +91,7 @@ router.post("/", async (req, res) => {
     }
 
     // 2. Build absolute shareable URL (always public https/http link)
-    const clientBase = (
-      process.env.CLIENT_URL || "http://localhost:3000"
-    ).replace(/\/+$/, "");
+    const clientBase = getClientBaseUrl(req);
     const shareableLink = `${clientBase}/submit/${assignment.id}`;
 
     // Update assignment with its permanent shareable link
@@ -202,10 +214,19 @@ router.get("/:id", async (req, res) => {
         });
     }
 
-    // Re-generate QR code for display
-    const shareableLink =
-      assignment.shareable_link ||
-      `${(process.env.CLIENT_URL || "http://localhost:3000").replace(/\/+$/, "")}/submit/${assignment.id}`;
+    // Re-generate QR code for display, ensuring live domain is used and migrating any localhost links
+    const clientBase = getClientBaseUrl(req);
+    let shareableLink = assignment.shareable_link;
+
+    if (!shareableLink || shareableLink.includes("localhost")) {
+      shareableLink = `${clientBase}/submit/${assignment.id}`;
+      // Update database asynchronously so old localhost link is permanently replaced
+      supabase
+        .from("assignments")
+        .update({ shareable_link: shareableLink })
+        .eq("id", assignment.id)
+        .then(() => {});
+    }
 
     const qrCode = await qrcode.toDataURL(shareableLink, {
       width: 250,

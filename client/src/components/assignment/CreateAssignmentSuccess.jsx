@@ -3,9 +3,13 @@ import { Link } from 'react-router-dom';
 import CopyButton from '../common/CopyButton';
 
 export function CreateAssignmentSuccess({ result, onReset }) {
-  const shareLink =
+  let shareLink =
     result?.shareableLink ||
     (result?.assignment?.id ? `${window.location.origin}/submit/${result.assignment.id}` : '');
+
+  if (shareLink.includes('localhost') && !window.location.hostname.includes('localhost') && result?.assignment?.id) {
+    shareLink = `${window.location.origin}/submit/${result.assignment.id}`;
+  }
 
   return (
     <div className="sb-success-container">

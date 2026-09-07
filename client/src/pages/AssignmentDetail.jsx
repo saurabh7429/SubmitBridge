@@ -111,10 +111,14 @@ function AssignmentDetail() {
   }
 
   const { assignment, submissions = [], qrCode } = data;
-  const shareLink =
+  let shareLink =
     assignment.shareable_link ||
     data?.shareableLink ||
     `${window.location.origin}/submit/${id}`;
+
+  if (shareLink.includes('localhost') && !window.location.hostname.includes('localhost')) {
+    shareLink = `${window.location.origin}/submit/${id}`;
+  }
 
   return (
     <div className="sb-detail-view">
