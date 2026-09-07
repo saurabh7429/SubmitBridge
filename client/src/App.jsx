@@ -12,14 +12,31 @@ import AssignmentDetail from './pages/AssignmentDetail';
 import StudentSubmit from './pages/StudentSubmit';
 
 function PrivateRoute({ children }) {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, loading } = useAuth();
+  if (loading) {
+    return (
+      <div className="sb-page-loading">
+        <div className="sb-spinner" />
+        <span className="sb-loading-text">Verifying faculty session...</span>
+      </div>
+    );
+  }
   return isAuthenticated ? children : <Navigate to="/login" replace />;
 }
 
 function PublicAuthRoute({ children }) {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, loading } = useAuth();
+  if (loading) {
+    return (
+      <div className="sb-page-loading">
+        <div className="sb-spinner" />
+        <span className="sb-loading-text">Loading...</span>
+      </div>
+    );
+  }
   return isAuthenticated ? <Navigate to="/dashboard" replace /> : children;
 }
+
 
 function AppRoutes() {
   return (

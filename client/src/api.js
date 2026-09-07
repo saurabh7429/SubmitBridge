@@ -6,6 +6,15 @@ const API_BASE = "/api";
 // Helper: retrieve JWT token from localStorage
 const getToken = () => localStorage.getItem("token");
 
+// Attach token dynamically to all requests
+axios.interceptors.request.use((config) => {
+  const token = getToken();
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
 // Helper: get authorization header config for protected teacher routes
 const authHeader = () => ({
   headers: {
@@ -25,8 +34,12 @@ export const registerTeacher = (name, email, password, collegeName) =>
 export const loginTeacher = (email, password) =>
   axios.post(`${API_BASE}/auth/login`, { email, password });
 
+export const demoFacultyLogin = () =>
+  axios.post(`${API_BASE}/auth/demo`);
+
 export const getTeacherProfile = () =>
-  axios.get(`${API_BASE}/auth/me`, authHeader());
+  axios.get(`${API_BASE}/auth/me`);
+
 
 // ─── ASSIGNMENTS APIS ─────────────────────────────────────────────────────────
 export const getAssignments = () =>

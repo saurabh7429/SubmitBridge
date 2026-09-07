@@ -159,6 +159,50 @@ router.post("/login", async (req, res) => {
   }
 });
 
+// ─── POST /api/auth/demo ──────────────────────────────────────────────────────
+// 1-Click Viva Demo Sign-In for evaluators & examiners
+router.post("/demo", async (req, res) => {
+  try {
+    const demoEmail = "vikram.nit@edu.in";
+    let { data: teacher, error } = await supabase
+      .from("teachers")
+      .select("*")
+      .eq("email", demoEmail)
+      .maybeSingle();
+
+    if (!teacher || error) {
+      // Fallback to any first teacher or prof_demo
+      const { data: anyTeacher } = await supabase
+        .from("teachers")
+        .select("*")
+        .limit(1)
+        .single();
+      teacher = anyTeacher;
+    }
+
+    if (!teacher) {
+      return res.status(404).json({ message: "No demo faculty account found." });
+    }
+
+    const token = generateToken(teacher);
+
+    res.json({
+      message: "Demo login successful!",
+      token,
+      teacher: {
+        id: teacher.id,
+        name: teacher.name,
+        email: teacher.email,
+        collegeName: teacher.college_name,
+      },
+    });
+  } catch (err) {
+    console.error("Demo login error:", err);
+    res.status(500).json({ message: "Server error during demo login.", error: err.message });
+  }
+});
+
+
 // ─── GET /api/auth/me ─────────────────────────────────────────────────────────
 // Fetch current logged in teacher details
 router.get("/me", authMiddleware, async (req, res) => {

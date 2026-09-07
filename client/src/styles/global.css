@@ -2081,6 +2081,146 @@ button, input, textarea, select {
   text-decoration: underline;
 }
 
+/* ── Password Input & Toggle Button ─────────────────────────────────────── */
+.sb-password-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.sb-input--password {
+  padding-right: 46px;
+}
+
+.sb-password-toggle-btn {
+  position: absolute;
+  right: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--sb-radius-sm);
+  background: transparent;
+  border: none;
+  color: var(--sb-text-muted);
+  cursor: pointer;
+  transition: all var(--sb-transition-fast);
+}
+
+.sb-password-toggle-btn:hover {
+  color: var(--sb-text-primary);
+  background-color: var(--sb-bg-hover);
+}
+
+/* ── Quick Viva Demo Section ────────────────────────────────────────────── */
+.sb-auth-demo-section {
+  margin-top: 20px;
+}
+
+.sb-auth-divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 16px 0 14px;
+}
+
+.sb-auth-divider::before,
+.sb-auth-divider::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1.5px solid var(--sb-border);
+}
+
+.sb-auth-divider span {
+  padding: 0 12px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  color: var(--sb-text-muted);
+  text-transform: uppercase;
+}
+
+.sb-btn-demo {
+  background: #f8fafc;
+  border: 2px dashed #6366f1;
+  color: #3730a3;
+  font-weight: 700;
+  font-size: 13.5px;
+  padding: 11px 16px;
+  border-radius: var(--sb-radius-md);
+  box-shadow: 0 2px 6px rgba(99, 102, 241, 0.08);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all var(--sb-transition-fast);
+}
+
+.sb-btn-demo:hover {
+  background: #eef2ff;
+  border-color: #4f46e5;
+  color: #312e81;
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.18);
+  transform: translateY(-1px);
+}
+
+.sb-demo-icon {
+  font-size: 16px;
+}
+
+.sb-auth-portal-switch {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--sb-border-subtle);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.sb-auth-portal-switch span:first-child {
+  font-weight: 700;
+  color: var(--sb-text-primary);
+}
+
+.sb-btn-faculty-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #ffffff;
+  background-color: rgba(255, 255, 255, 0.14);
+  border: 1.5px solid rgba(255, 255, 255, 0.3);
+  border-radius: var(--sb-radius-md);
+  text-decoration: none;
+  transition: all var(--sb-transition-fast);
+}
+
+.sb-btn-faculty-nav:hover {
+  background-color: #ffffff;
+  color: var(--sb-primary);
+  border-color: #ffffff;
+}
+
+.sb-page-loading {
+  min-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+
+.sb-loading-text {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--sb-text-muted);
+}
+
+
 /* ── Modal Dialog ───────────────────────────────────────────────────────── */
 .sb-modal-backdrop {
   position: fixed;
